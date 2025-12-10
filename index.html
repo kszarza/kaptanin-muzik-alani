@@ -13,22 +13,25 @@
         display: flex;
         height: 100vh;
         color: white;
+        overflow: hidden;
     }
 
+    /* SOL MENU */
     .sidebar {
-        width: 300px;
+        width: 320px;
         background: rgba(255,255,255,0.05);
         backdrop-filter: blur(10px);
         padding: 20px;
         overflow-y: auto;
     }
 
+    /* ANA EKRAN */
     .main {
         flex: 1;
         display: flex;
         flex-direction: column;
         padding: 30px;
-        backdrop-filter: blur(6px);
+        overflow-y: auto;
     }
 
     h2 {
@@ -53,7 +56,7 @@
         font-size: 16px;
     }
 
-    .resultItem {
+    .resultItem, .playlistItem {
         padding: 10px;
         margin: 8px 0;
         border-radius: 10px;
@@ -64,25 +67,81 @@
         align-items: center;
     }
 
-    .resultItem:hover {
+    .resultItem:hover, .playlistItem:hover {
         background: rgba(255,255,255,0.2);
     }
 
     .plusBtn {
-        font-size: 20px;
+        font-size: 22px;
         cursor: pointer;
+        color: #ffcc00;
     }
 
-    #videoPlayer iframe {
-        width: 100% !important;
-        height: 360px !important;
+    /* PLAYER */
+    #albumCover {
+        width: 240px;
+        height: 240px;
+        object-fit: cover;
         border-radius: 12px;
+        margin-bottom: 15px;
+        display: none;
     }
+
+    #wave {
+        width: 100%;
+        height: 40px;
+    }
+
+    #controls {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    button {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(90deg, #ff4d4d, #ffcc00);
+        color: black;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        transform: scale(1.05);
+    }
+
+    /* ALT MINI PLAYER */
+    .bottomPlayer {
+        position: fixed;
+        bottom: 0;
+        left: 320px;
+        right: 0;
+        height: 70px;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        z-index: 999;
+    }
+
+    .bottomPlayer img {
+        width: 55px;
+        height: 55px;
+        border-radius: 8px;
+        margin-right: 15px;
+    }
+
+    .bpTitle { font-size: 18px; font-weight: 600; }
 </style>
 </head>
 
 <body>
 
+<!-- ■■■ SIDEBAR ■■■ -->
 <div class="sidebar">
     <h2>Arama</h2>
 
@@ -96,21 +155,42 @@
     <div id="playlist"></div>
 </div>
 
+<!-- ■■■ MAIN AREA ■■■ -->
 <div class="main">
     <h2>Çalan Şarkı</h2>
 
+    <!-- Şarkı adı -->
+    <h3 id="currentSong" style="color:#ffcc00; margin-top:10px;"></h3>
+
+    <!-- Albüm kapak -->
+    <img id="albumCover" src="" />
+
+    <!-- Local Video -->
     <video id="localVideo" controls loop style="width:100%; border-radius:12px;">
         <source src="hansarhoş.mp4" type="video/mp4">
     </video>
 
+    <!-- YouTube Player -->
     <div id="ytPlayerWrapper" style="margin-top:20px; display:none;">
         <div id="videoPlayer"></div>
     </div>
 
+    <!-- Dalga animasyonu -->
+    <canvas id="wave"></canvas>
+
+    <!-- Kontroller -->
     <div id="controls">
-        <button onclick="safePlay()">▶ Oynat</button>
-        <button onclick="safePause()">⏸ Duraklat</button>
+        <button onclick="player.playVideo()">▶ Oynat</button>
+        <button onclick="player.pauseVideo()">⏸ Duraklat</button>
+        <button onclick="prevSong()">⏮ Geri</button>
+        <button onclick="nextSong()">⏭ İleri</button>
     </div>
+</div>
+
+<!-- ■■■ ALT MİNİ PLAYER ■■■ -->
+<div class="bottomPlayer">
+    <img id="bpCover" src="">
+    <div class="bpTitle" id="bpTitle">Müzik seçilmedi</div>
 </div>
 
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -119,7 +199,16 @@
 let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 let player;
 let playerReady = false;
+let playlist = [];
+let currentIndex = -1;
 
+let localVideo = document.getElementById("localVideo");
+let currentSong = document.getElementById("currentSong");
+let albumCover = document.getElementById("albumCover");
+let bpCover = document.getElementById("bpCover");
+let bpTitle = document.getElementById("bpTitle");
+
+/* YOUTUBE PLAYER HAZIR MI? */
 function onYouTubeIframeAPIReady() {
     player = new YT.Player("videoPlayer", {
         height: "360",
@@ -127,21 +216,18 @@ function onYouTubeIframeAPIReady() {
         videoId: "",
         playerVars: { modestbranding: 1, rel: 0, controls: 1 },
         events: {
-            onReady: () => {
-                playerReady = true;
-            }
+            onReady: () => playerReady = true,
+            onStateChange: onPlayerStateChange
         }
     });
 }
 
-function safePlay() {
-    if (playerReady) player.playVideo();
+/* BİTTİĞİNDE OTOMATİK SONRAKİ */
+function onPlayerStateChange(e) {
+    if (e.data === YT.PlayerState.ENDED) nextSong();
 }
 
-function safePause() {
-    if (playerReady) player.pauseVideo();
-}
-
+/* ARAMA */
 document.getElementById("searchInput").addEventListener("keyup", function () {
     let q = this.value.trim();
     if (!q) return;
@@ -155,42 +241,89 @@ document.getElementById("searchInput").addEventListener("keyup", function () {
             if (!data.items) return;
 
             data.items.forEach(v => {
-                let title = v.snippet.title.replace(/"/g, "'");
+                let title = v.snippet.title;
                 let id = v.id.videoId;
+                let thumb = v.snippet.thumbnails.default.url;
 
                 let div = document.createElement("div");
                 div.className = "resultItem";
-
                 div.innerHTML = `
-                    <span onclick="playYT('${id}', '${title}')">${title}</span>
-                    <span class="plusBtn" onclick="addToList('${id}', '${title}')">+</span>
+                    <span onclick="playYT('${id}', '${title}', '${thumb}')">${title}</span>
+                    <span class="plusBtn" onclick="addToList('${id}', '${title}', '${thumb}')">+</span>
                 `;
-
                 box.appendChild(div);
             });
         });
 });
 
-function playYT(id, title) {
-    if (!playerReady) {
-        console.log("Player hazır değil, bekletiliyor...");
-        setTimeout(() => playYT(id, title), 300);
-        return;
-    }
+/* LİSTEYE EKLE */
+function addToList(id, title, thumb) {
+    playlist.push({ id, title, thumb });
 
-    document.getElementById("localVideo").style.display = "none";
+    let p = document.createElement("div");
+    p.className = "playlistItem";
+    p.innerHTML = `<span onclick="playFromList(${playlist.length - 1})">${title}</span>`;
+    document.getElementById("playlist").appendChild(p);
+}
+
+/* LİSTEDEN ÇAL */
+function playFromList(i) {
+    let s = playlist[i];
+    currentIndex = i;
+    playYT(s.id, s.title, s.thumb);
+}
+
+/* YOUTUBE ÇAL */
+function playYT(id, title, thumb) {
+    if (!playerReady) return setTimeout(() => playYT(id, title, thumb), 200);
+
+    localVideo.style.display = "none";
     document.getElementById("ytPlayerWrapper").style.display = "block";
+
+    currentSong.textContent = title;
+    albumCover.style.display = "block";
+    albumCover.src = thumb;
+
+    bpCover.src = thumb;
+    bpTitle.textContent = title;
 
     player.loadVideoById(id);
     player.playVideo();
 }
 
-function addToList(id, title) {
-    let div = document.createElement("div");
-    div.className = "resultItem";
-    div.innerHTML = `<span onclick="playYT('${id}', '${title}')">${title}</span>`;
-    document.getElementById("playlist").appendChild(div);
+/* GERİ-İLERİ */
+function nextSong() {
+    if (playlist.length === 0) return;
+    currentIndex = (currentIndex + 1) % playlist.length;
+    playFromList(currentIndex);
 }
+
+function prevSong() {
+    if (playlist.length === 0) return;
+    currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+    playFromList(currentIndex);
+}
+
+/* BASİT DALGA ANİMASYONU */
+const canvas = document.getElementById("wave");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth - 350;
+canvas.height = 40;
+let t = 0;
+
+function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.beginPath();
+    for (let x = 0; x < canvas.width; x++) {
+        let y = 20 + Math.sin((x + t) * 0.03) * 10;
+        ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = "#ffcc00";
+    ctx.stroke();
+    t += 1.5;
+    requestAnimationFrame(animate);
+}
+animate();
 </script>
 
 </body>
