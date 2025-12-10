@@ -1,171 +1,200 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Kaptanın Müzik Alanı</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kaptanın Spotify Alanı</title>
+
 <style>
     body {
         margin: 0;
-        background: #0d0d0d;
+        font-family: "Poppins", sans-serif;
+        background: #121212;
         color: white;
-        font-family: Arial;
         display: flex;
         height: 100vh;
+        overflow: hidden;
     }
 
-    /* Sol taraf - video alanı */
-    #playerArea {
-        flex: 3;
-        position: relative;
+    /* Sol Menü */
+    .sidebar {
+        width: 240px;
+        background: #000;
+        padding: 30px 20px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
 
-    #player {
-        width: 100%;
-        height: 100%;
-        background: black;
+    .sidebar h1 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0 0 20px;
+        color: #1db954;
     }
 
-    /* Sağ taraf - çalma listesi */
-    #playlist {
-        flex: 1;
-        background: #111;
-        padding: 20px;
-        overflow-y: auto;
-        border-left: 2px solid #222;
-    }
-
-    .songItem {
-        padding: 10px;
-        background: #1b1b1b;
-        margin-bottom: 10px;
-        border-radius: 6px;
+    .menu-item {
+        font-size: 16px;
+        padding: 10px 0;
+        opacity: .8;
         cursor: pointer;
+        transition: .2s;
+    }
+    .menu-item:hover {
+        opacity: 1;
+        color: #1db954;
+        transform: translateX(4px);
     }
 
-    /* Arama kutusu */
-    #searchBox {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        width: 350px;
-        height: 40px;
-        font-size: 18px;
-        padding: 5px 10px;
-        border-radius: 8px;
+    /* Ana Alan */
+    .main {
+        flex: 1;
+        background: linear-gradient(180deg, #1e1e1e, #121212);
+        padding: 30px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .title {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    /* Arama */
+    .searchBox {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 16px;
+        border-radius: 10px;
         border: none;
+        outline: none;
+        background: #2a2a2a;
+        color: white;
+        margin-bottom: 15px;
     }
 
-    /* Öneri kutusu */
-    #suggestions {
-        position: absolute;
-        top: 65px;
-        left: 20px;
-        width: 350px;
-        background: #222;
-        border-radius: 8px;
+    .suggestions {
+        background: #1f1f1f;
+        border-radius: 12px;
         overflow: hidden;
     }
 
     .sItem {
-        padding: 10px;
+        padding: 12px 18px;
         display: flex;
+        align-items: center;
         justify-content: space-between;
         cursor: pointer;
         border-bottom: 1px solid #333;
+        transition: 0.2s;
     }
-
     .sItem:hover {
         background: #333;
     }
 
     .addBtn {
-        background: #0f0;
-        color: black;
-        padding: 4px 8px;
-        border-radius: 6px;
+        font-size: 22px;
+        font-weight: 900;
+        color: #1db954;
+        padding: 5px 10px;
         cursor: pointer;
-        font-weight: bold;
     }
 
-    /* YouTube logo gizleme */
-    .ytp-watermark,
-    .ytp-chrome-top,
-    .ytp-chrome-bottom {
-        display: none !important;
+    /* Player Alanı */
+    .playerBox {
+        margin-top: 30px;
+        width: 100%;
+        height: 380px;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 0 16px rgba(0,0,0,.6);
+    }
+
+    /* Playlist */
+    .playlistBox {
+        margin-top: 30px;
+        background: #1b1b1b;
+        border-radius: 15px;
+        padding: 15px;
+    }
+    .songItem {
+        padding: 10px;
+        cursor: pointer;
+        border-bottom: 1px solid #333;
+    }
+    .songItem:hover {
+        background: #2c2c2c;
     }
 </style>
 </head>
+
 <body>
 
-<div id="playerArea">
-    <input id="searchBox" placeholder="Şarkı ara...">
-    <div id="suggestions"></div>
-    <div id="player"></div>
+<!-- SOL MENÜ -->
+<div class="sidebar">
+    <h1>KAPTANFAY</h1>
+    <div class="menu-item">Ana Sayfa</div>
+    <div class="menu-item">Arşiv</div>
+    <div class="menu-item">Listelerim</div>
+    <div class="menu-item">Profil</div>
 </div>
 
-<div id="playlist">
-    <h2>🎵 Çalma Listesi</h2>
-    <div id="list"></div>
+<!-- ANA BÖLÜM -->
+<div class="main">
+    <div class="title">🎧 Kaptanın Spotify Alanı</div>
+
+    <!-- Arama -->
+    <input id="searchBox" class="searchBox" type="text" placeholder="Şarkı veya sanatçı ara..." />
+    <div id="suggestions" class="suggestions"></div>
+
+    <!-- Player -->
+    <div class="playerBox">
+        <div id="player"></div>
+    </div>
+
+    <!-- Liste -->
+    <div class="playlistBox">
+        <h3>🎵 Oynatma Listesi</h3>
+        <div id="list"></div>
+    </div>
 </div>
 
+<!-- YOUTUBE PLAYER -->
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
 let player;
+let playerReady = false;
 let playlist = [];
 
 function onYouTubeIframeAPIReady() {
     player = new YT.Player("player", {
         height: "100%",
         width: "100%",
-        videoId: "hansarhos", // senin mp4 yerine başlangıç videosu
+        videoId: "hansarhos",
         playerVars: {
-            autoplay: 1,
+            autoplay: 0,
             controls: 1,
             modestbranding: 1,
-            rel: 0,
-            showinfo: 0
+            rel: 0
+        },
+        events: {
+            onReady() {
+                playerReady = true;
+            }
         }
     });
 }
 
-document.getElementById("searchBox").addEventListener("input", async function () {
-    let q = this.value.trim();
-    if (q.length < 2) {
-        document.getElementById("suggestions").innerHTML = "";
-        return;
-    }
-
-    let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
-
-    let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=${encodeURIComponent(q)}&key=${key}`;
-
-    let data = await fetch(url).then(r => r.json());
-
-    if (!data.items) {
-        document.getElementById("suggestions").innerHTML = "<div style='padding:10px;'>Sonuç bulunamadı</div>";
-        return;
-    }
-
-    let html = "";
-    data.items.forEach(v => {
-        let id = v.id.videoId;
-        let title = v.snippet.title;
-
-        html += `
-            <div class="sItem" onclick="playVideo('${id}')">
-                <span>${title}</span>
-                <span class="addBtn" onclick="event.stopPropagation(); addToList('${id}', '${title.replace(/'/g, "")}')">+</span>
-            </div>
-        `;
-    });
-
-    document.getElementById("suggestions").innerHTML = html;
-});
-
 function playVideo(id) {
+    if (!playerReady) {
+        setTimeout(() => playVideo(id), 300);
+        return;
+    }
     player.loadVideoById(id);
-    document.getElementById("suggestions").innerHTML = "";
 }
 
 function addToList(id, title) {
@@ -173,11 +202,42 @@ function addToList(id, title) {
 
     let item = document.createElement("div");
     item.className = "songItem";
-    item.innerHTML = title;
+    item.innerText = title;
     item.onclick = () => playVideo(id);
 
     document.getElementById("list").appendChild(item);
 }
+
+document.getElementById("searchBox").addEventListener("input", async function () {
+    let q = this.value.trim();
+    let box = document.getElementById("suggestions");
+
+    if (q.length < 2) {
+        box.innerHTML = "";
+        return;
+    }
+
+    let key = "YOUR_API_KEY";   /* BURAYA KENDİ ANAHTARINI KOY */
+    let url = `https://www.googleapis.com/youtube/v3/search?type=video&part=snippet&maxResults=6&q=${encodeURIComponent(q)}&key=${key}`;
+    
+    let data = await fetch(url).then(r => r.json());
+    if (!data.items) return;
+
+    let html = "";
+    data.items.forEach(item => {
+        let id = item.id.videoId;
+        let title = item.snippet.title.replace(/'/g, "");
+
+        html += `
+            <div class="sItem">
+                <span onclick="playVideo('${id}')">${title}</span>
+                <span class="addBtn" onclick="event.stopPropagation(); addToList('${id}', '${title}')">+</span>
+            </div>
+        `;
+    });
+
+    box.innerHTML = html;
+});
 </script>
 
 </body>
