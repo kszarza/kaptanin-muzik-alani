@@ -144,7 +144,7 @@
 
 <!-- ANA BÖLÜM -->
 <div class="main">
-    <div class="title">🎧 Kaptanın Spotify Alanı</div>
+    <div class="title">🎧 Kaptanın Müzik Alanı</div>
 
     <!-- Arama -->
     <input id="searchBox" class="searchBox" type="text" placeholder="Şarkı veya sanatçı ara..." />
@@ -217,7 +217,7 @@ document.getElementById("searchBox").addEventListener("input", async function ()
         return;
     }
 
-    let key = "YOUR_API_KEY";   /* BURAYA KENDİ ANAHTARINI KOY */
+    let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";   /* BURAYA KENDİ ANAHTARINI KOY */
     let url = `https://www.googleapis.com/youtube/v3/search?type=video&part=snippet&maxResults=6&q=${encodeURIComponent(q)}&key=${key}`;
     
     let data = await fetch(url).then(r => r.json());
