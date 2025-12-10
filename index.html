@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kaptanın Müzik Alanı</title>
+
     <style>
         body {
             margin: 0;
@@ -14,16 +15,24 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .container {
             text-align: center;
             max-width: 900px;
+            width: 90%;
             padding: 40px;
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
             border-radius: 20px;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         h1 {
@@ -36,34 +45,37 @@
         #myVideo, #yt-player {
             display: none;
             width: 100%;
-            border-radius: 15px;
+            max-height: 430px;
+            border-radius: 18px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.15);
             margin-top: 20px;
         }
 
-        #playButton {
-            padding: 15px 40px;
-            font-size: 22px;
+        #playHans {
+            padding: 18px 40px;
+            font-size: 20px;
             border: none;
             border-radius: 50px;
             background: linear-gradient(90deg, #ff4d4d, #ffcc00);
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
             color: #000;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
         }
 
-        #playButton:hover {
-            transform: scale(1.05);
+        #playHans:hover {
+            transform: scale(1.06);
         }
 
-        #searchBar {
+        /* ARAMA */
+        #searchBox {
             width: 80%;
-            padding: 12px 20px;
+            padding: 15px;
             font-size: 18px;
-            border-radius: 50px;
+            border-radius: 12px;
             border: none;
+            margin-top: 30px;
             outline: none;
-            margin-top: 20px;
         }
 
         #results {
@@ -71,121 +83,160 @@
             text-align: left;
         }
 
-        .result-item {
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
+        .resultItem {
+            background: rgba(255,255,255,0.08);
+            padding: 12px;
+            border-radius: 10px;
             margin-bottom: 8px;
             cursor: pointer;
+            transition: 0.2s;
         }
 
-        .result-item:hover {
-            background: rgba(255,255,255,0.1);
+        .resultItem:hover {
+            background: rgba(255,255,255,0.15);
         }
+
+        /* CONTROL BUTTONS */
+        .controls {
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .play { background: #00ff88; }
+        .pause { background: #ffaa00; }
+        .stop { background: #ff4444; }
+
     </style>
 </head>
+
 <body>
 
 <div class="container">
+
     <h1>Kaptanın Müzik Alanı</h1>
 
-    <!-- Arama Barı -->
-    <input id="searchBar" type="text" placeholder="Şarkı ara..." oninput="searchSongs(this.value)">
+    <p>Hansarhoş videosu + YouTube Player birleşik sistem.</p>
 
-    <!-- YouTube Arama Sonuçları -->
-    <div id="results"></div>
-
-    <!-- Senin mp4 videon -->
+    <!-- Hansarhoş MP4 -->
     <video id="myVideo" loop playsinline>
-        <source src="hansarhos.mp4" type="video/mp4">
+        <source src="hansarhoş.mp4" type="video/mp4" />
     </video>
 
-    <!-- Başlat Butonu -->
-    <button id="playButton">▶️ Başlat</button>
+    <button id="playHans">▶️ Hansarhoş'u Başlat</button>
 
-    <!-- YouTube Player -->
+    <!-- YOUTUBE PLAYER -->
     <div id="yt-player"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="btn play" onclick="ytPlay()">▶️ Başlat</button>
+        <button class="btn pause" onclick="ytPause()">⏸ Duraklat</button>
+        <button class="btn stop" onclick="ytStop()">⏹ Durdur</button>
+    </div>
+
+    <!-- ARAMA -->
+    <input id="searchBox" placeholder="Şarkı ara..." />
+
+    <div id="results"></div>
 
 </div>
 
-<!-- YOUTUBE API -->
+
 <script>
-let player;
-let youtubeReady = false;
+    let API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 
-// YouTube API Script
-const tag = document.createElement("script");
-tag.src = "https://www.youtube.com/iframe_api";
-document.body.appendChild(tag);
+    let player = null;
+    let youtubeReady = false;
 
-// API Hazır
-function onYouTubeIframeAPIReady() {
-    player = new YT.Player("yt-player", {
-        height: "360",
-        width: "640",
-        videoId: "",
-        playerVars: { rel: 0, controls: 1 },
-        events: {
-            onReady: () => { youtubeReady = true; }
+    // YOUTUBE SCRIPT
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+
+    function onYouTubeIframeAPIReady() {
+        youtubeReady = true;
+    }
+
+    // HANSARHOŞ BAŞLAT
+    document.getElementById("playHans").onclick = () => {
+        const hv = document.getElementById("myVideo");
+        hv.play()
+            .then(() => {
+                hv.style.display = "block";
+                document.getElementById("yt-player").style.display = "none";
+            })
+            .catch(() => alert("Başlatılamadı, tekrar dene."));
+    };
+
+
+    // YOUTUBE SEÇ
+    function selectVideo(videoId) {
+        // hans kapat
+        document.getElementById("myVideo").pause();
+        document.getElementById("myVideo").style.display = "none";
+
+        document.getElementById("yt-player").style.display = "block";
+
+        if (!player) {
+            player = new YT.Player("yt-player", {
+                videoId: videoId,
+                playerVars: { controls: 1, rel: 0 },
+                events: {
+                    onReady: (e) => e.target.playVideo()
+                }
+            });
+        } else {
+            player.loadVideoById(videoId);
+            player.playVideo();
         }
-    });
-}
-
-// MP4 Başlat
-document.getElementById("playButton").onclick = () => {
-    const videoElement = document.getElementById("myVideo");
-    videoElement.style.display = "block";
-    videoElement.play().catch(() => {
-        alert("Müzik otomatik başlatılamadı, tekrar dene.");
-    });
-    document.getElementById("playButton").style.display = "none";
-};
-
-// YouTube Arama
-async function searchSongs(query) {
-    if (query.length < 2) {
-        document.getElementById("results").innerHTML = "";
-        return;
     }
 
-    const apiKey = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
-
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=${encodeURIComponent(query)}&key=${apiKey}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    const resultsDiv = document.getElementById("results");
-    resultsDiv.innerHTML = "";
-
-    if (!data.items) {
-        resultsDiv.innerHTML = "<p>Sonuç bulunamadı.</p>";
-        return;
+    // CONTROLS
+    function ytPlay() {
+        if (player) player.playVideo();
+    }
+    function ytPause() {
+        if (player) player.pauseVideo();
+    }
+    function ytStop() {
+        if (player) player.stopVideo();
     }
 
-    data.items.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "result-item";
-        div.innerHTML = `<strong>${item.snippet.title}</strong>`;
-        div.onclick = () => selectVideo(item.id.videoId);
-        resultsDiv.appendChild(div);
+    // ARAMA (CANLI)
+    document.getElementById("searchBox").addEventListener("input", function () {
+        let q = this.value.trim();
+        if (q.length < 2) return;
+
+        fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=8&q=${q}&key=${API_KEY}`)
+            .then(r => r.json())
+            .then(data => {
+                let res = "";
+                if (!data.items) return;
+
+                data.items.forEach(item => {
+                    res += `
+                        <div class="resultItem" onclick="selectVideo('${item.id.videoId}')">
+                            🎵 ${item.snippet.title}
+                        </div>
+                    `;
+                });
+
+                document.getElementById("results").innerHTML = res;
+            })
+            .catch(() => {
+                document.getElementById("results").innerHTML = "Sonuç yok.";
+            });
     });
-}
 
-// Video Seç
-function selectVideo(videoId) {
-    // mp4 kapat
-    document.getElementById("myVideo").pause();
-    document.getElementById("myVideo").style.display = "none";
-
-    // youtube aç
-    document.getElementById("yt-player").style.display = "block";
-
-    if (!youtubeReady) return alert("Oynatıcı yükleniyor...");
-
-    player.loadVideoById(videoId);
-    player.playVideo();
-}
 </script>
 
 </body>
