@@ -3,241 +3,194 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kaptanın Spotify Alanı</title>
+<title>Kaptan Müzik Alanı</title>
 
 <style>
     body {
         margin: 0;
-        font-family: "Poppins", sans-serif;
-        background: #121212;
-        color: white;
+        font-family: Poppins, sans-serif;
+        background: linear-gradient(135deg, #0a0a0a, #1c1c1c);
         display: flex;
         height: 100vh;
-        overflow: hidden;
+        color: white;
     }
 
-    /* Sol Menü */
     .sidebar {
-        width: 240px;
-        background: #000;
-        padding: 30px 20px;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
+        width: 300px;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        overflow-y: auto;
     }
 
-    .sidebar h1 {
-        font-size: 26px;
-        font-weight: 700;
-        margin: 0 0 20px;
-        color: #1db954;
-    }
-
-    .menu-item {
-        font-size: 16px;
-        padding: 10px 0;
-        opacity: .8;
-        cursor: pointer;
-        transition: .2s;
-    }
-    .menu-item:hover {
-        opacity: 1;
-        color: #1db954;
-        transform: translateX(4px);
-    }
-
-    /* Ana Alan */
     .main {
         flex: 1;
-        background: linear-gradient(180deg, #1e1e1e, #121212);
+        display: flex;
+        flex-direction: column;
         padding: 30px;
-        overflow-y: auto;
-        box-sizing: border-box;
+        backdrop-filter: blur(6px);
     }
 
-    .title {
-        font-size: 32px;
-        font-weight: 700;
-        margin-bottom: 20px;
+    h2 {
+        margin-top: 0;
+        font-size: 26px;
+        background: linear-gradient(90deg, #ff4d4d, #ffcc00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
-    /* Arama */
     .searchBox {
-        width: 100%;
-        padding: 14px 20px;
-        font-size: 16px;
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .searchBox input {
+        flex: 1;
+        padding: 10px;
         border-radius: 10px;
         border: none;
         outline: none;
-        background: #2a2a2a;
-        color: white;
-        margin-bottom: 15px;
+        font-size: 16px;
     }
 
-    .suggestions {
-        background: #1f1f1f;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    .sItem {
-        padding: 12px 18px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        border-bottom: 1px solid #333;
-        transition: 0.2s;
-    }
-    .sItem:hover {
-        background: #333;
-    }
-
-    .addBtn {
-        font-size: 22px;
-        font-weight: 900;
-        color: #1db954;
-        padding: 5px 10px;
-        cursor: pointer;
-    }
-
-    /* Player Alanı */
-    .playerBox {
-        margin-top: 30px;
-        width: 100%;
-        height: 380px;
-        border-radius: 18px;
-        overflow: hidden;
-        background: #000;
-        box-shadow: 0 0 16px rgba(0,0,0,.6);
-    }
-
-    /* Playlist */
-    .playlistBox {
-        margin-top: 30px;
-        background: #1b1b1b;
-        border-radius: 15px;
-        padding: 15px;
-    }
-    .songItem {
+    .resultItem {
         padding: 10px;
+        margin: 8px 0;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.1);
         cursor: pointer;
-        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .songItem:hover {
-        background: #2c2c2c;
+
+    .resultItem:hover {
+        background: rgba(255,255,255,0.2);
+    }
+
+    .plusBtn {
+        font-size: 20px;
+        cursor: pointer;
+    }
+
+    #videoPlayer {
+        width: 100%;
+        border-radius: 12px;
+        margin-top: 20px;
+    }
+
+    #controls {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+
+    button {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(90deg, #ff4d4d, #ffcc00);
+        color: black;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        transform: scale(1.05);
     }
 </style>
 </head>
 
 <body>
 
-<!-- SOL MENÜ -->
 <div class="sidebar">
-    <h1>KAPTANFAY</h1>
-    <div class="menu-item">Ana Sayfa</div>
-    <div class="menu-item">Arşiv</div>
-    <div class="menu-item">Listelerim</div>
-    <div class="menu-item">Profil</div>
+    <h2>Arama</h2>
+
+    <div class="searchBox">
+        <input id="searchInput" type="text" placeholder="Şarkı ara...">
+    </div>
+
+    <div id="searchResults"></div>
+
+    <h2>Liste</h2>
+    <div id="playlist"></div>
 </div>
 
-<!-- ANA BÖLÜM -->
 <div class="main">
-    <div class="title">🎧 Kaptanın Müzik Alanı</div>
+    <h2>Çalan Şarkı</h2>
 
-    <!-- Arama -->
-    <input id="searchBox" class="searchBox" type="text" placeholder="Şarkı veya sanatçı ara..." />
-    <div id="suggestions" class="suggestions"></div>
+    <video id="localVideo" controls loop style="width:100%; border-radius:12px;">
+        <source src="hansarhoş.mp4" type="video/mp4">
+    </video>
 
-    <!-- Player -->
-    <div class="playerBox">
-        <div id="player"></div>
+    <div id="ytPlayerWrapper" style="margin-top:20px; display:none;">
+        <div id="videoPlayer"></div>
     </div>
 
-    <!-- Liste -->
-    <div class="playlistBox">
-        <h3>🎵 Oynatma Listesi</h3>
-        <div id="list"></div>
+    <div id="controls">
+        <button onclick="player.playVideo()">▶ Oynat</button>
+        <button onclick="player.pauseVideo()">⏸ Duraklat</button>
     </div>
 </div>
 
-<!-- YOUTUBE PLAYER -->
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
+let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 let player;
-let playerReady = false;
-let playlist = [];
+let localVideo = document.getElementById("localVideo");
 
 function onYouTubeIframeAPIReady() {
-    player = new YT.Player("player", {
-        height: "100%",
-        width: "100%",
-        videoId: "hansarhos",
-        playerVars: {
-            autoplay: 0,
-            controls: 1,
-            modestbranding: 1,
-            rel: 0
-        },
-        events: {
-            onReady() {
-                playerReady = true;
-            }
-        }
+    player = new YT.Player("videoPlayer", {
+        height: "360",
+        width: "640",
+        videoId: "",
+        playerVars: { modestbranding: 1, rel: 0, controls: 1 }
     });
 }
 
-function playVideo(id) {
-    if (!playerReady) {
-        setTimeout(() => playVideo(id), 300);
-        return;
-    }
+document.getElementById("searchInput").addEventListener("keyup", function () {
+    let q = this.value.trim();
+    if (!q) return;
+
+    fetch(`https://www.googleapis.com/youtube/v3/search?type=video&part=snippet&maxResults=6&q=${encodeURIComponent(q)}&key=${key}`)
+        .then(r => r.json())
+        .then(data => {
+            let box = document.getElementById("searchResults");
+            box.innerHTML = "";
+
+            if (!data.items) return;
+
+            data.items.forEach(v => {
+                let title = v.snippet.title;
+                let id = v.id.videoId;
+
+                let div = document.createElement("div");
+                div.className = "resultItem";
+                div.innerHTML = `
+                    <span onclick="playYT('${id}', '${title}')">${title}</span>
+                    <span class="plusBtn" onclick="addToList('${id}', '${title}')">+</span>
+                `;
+                box.appendChild(div);
+            });
+        });
+});
+
+function playYT(id, title) {
+    localVideo.style.display = "none";
+    document.getElementById("ytPlayerWrapper").style.display = "block";
     player.loadVideoById(id);
 }
 
 function addToList(id, title) {
-    playlist.push({ id, title });
-
-    let item = document.createElement("div");
-    item.className = "songItem";
-    item.innerText = title;
-    item.onclick = () => playVideo(id);
-
-    document.getElementById("list").appendChild(item);
+    let p = document.createElement("div");
+    p.className = "resultItem";
+    p.innerHTML = `
+        <span onclick="playYT('${id}', '${title}')">${title}</span>
+    `;
+    document.getElementById("playlist").appendChild(p);
 }
-
-document.getElementById("searchBox").addEventListener("input", async function () {
-    let q = this.value.trim();
-    let box = document.getElementById("suggestions");
-
-    if (q.length < 2) {
-        box.innerHTML = "";
-        return;
-    }
-
-    let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";   /* BURAYA KENDİ ANAHTARINI KOY */
-    let url = `https://www.googleapis.com/youtube/v3/search?type=video&part=snippet&maxResults=6&q=${encodeURIComponent(q)}&key=${key}`;
-    
-    let data = await fetch(url).then(r => r.json());
-    if (!data.items) return;
-
-    let html = "";
-    data.items.forEach(item => {
-        let id = item.id.videoId;
-        let title = item.snippet.title.replace(/'/g, "");
-
-        html += `
-            <div class="sItem">
-                <span onclick="playVideo('${id}')">${title}</span>
-                <span class="addBtn" onclick="event.stopPropagation(); addToList('${id}', '${title}')">+</span>
-            </div>
-        `;
-    });
-
-    box.innerHTML = html;
-});
 </script>
 
 </body>
