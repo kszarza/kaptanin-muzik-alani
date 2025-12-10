@@ -1,117 +1,65 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kaptan Müzik Sayfası</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: "Poppins", sans-serif;
-            background: linear-gradient(135deg, #0e0e0e, #1b1b1b);
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            text-align: center;
-            max-width: 800px;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 1.2s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-            background: linear-gradient(90deg, #ff4d4d, #ffcc00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        p {
-            font-size: 20px;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-
-        #myVideo {
-            display: none;
-            width: 100%;
-            border-radius: 18px;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        }
-
-        #playButton {
-            padding: 18px 40px;
-            font-size: 20px;
-            border: none;
-            border-radius: 50px;
-            background: linear-gradient(90deg, #ff4d4d, #ffcc00);
-            color: #000;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 0 15px rgba(255, 200, 50, 0.4);
-        }
-
-        #playButton:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(255, 200, 50, 0.7);
-        }
-
-        footer {
-            margin-top: 25px;
-            font-size: 14px;
-            opacity: 0.5;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaptan'ın DJ Kabini</title>
+    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"> 
 </head>
 <body>
 
-    <div class="container">
-        <h1>Kaptanın Müzik Alanı</h1>
-        <p>Ruhunu dinlendir, müziğin akışına bırak.</p>
+    <header>
+        <h1>KAPTAN'IN DİSCOTEĞİ 💿</h1>
+    </header>
 
-        <video id="myVideo" loop playsinline>
-            <source src="hansarhoş.mp4" type="video/mp4" />
-            Tarayıcınız video etiketini desteklemiyor.
-        </video>
+    <div id="app-container">
+        <div id="player-panel">
+            <h2>Müzik Oynatıcı</h2>
+            
+            <div id="video-wrapper">
+                <video id="myVideo" width="100%" height="auto" loop playsinline preload="auto">
+                    <source src="hansarhos.mp4" type="video/mp4">
+                    <source src="yedek_hansarhos.mp4" type="video/mp4">
+                    Tarayıcınız video etiketini desteklemiyor.
+                </video>
+                <div id="initial-overlay">
+                    <button id="initialPlayButton" class="animated-btn">
+                        <i class="fas fa-play"></i> Başla
+                    </button>
+                </div>
+            </div>
 
-        <button id="playButton">▶️ Müziği Başlat</button>
+            <div id="controls">
+                <button id="prevBtn" class="animated-btn"><i class="fas fa-backward"></i></button>
+                <button id="pausePlayBtn" class="animated-btn"><i class="fas fa-play"></i></button>
+                <button id="stopBtn" class="animated-btn"><i class="fas fa-stop"></i></button>
+                <button id="nextBtn" class="animated-btn"><i class="fas fa-forward"></i></button>
+            </div>
+        </div>
 
-        <footer>&copy; 2025 Kaptanın. Tüm hakları saklıdır.</footer>
+        <div id="playlist-panel">
+            <h2>Çalma Listesi</h2>
+
+            <div id="search-section">
+                <input type="text" id="searchInput" placeholder="Şarkı adı, sanatçı veya YouTube linki...">
+                <button id="searchBtn" class="animated-btn"><i class="fas fa-search"></i> Şarkı Ara</button>
+            </div>
+
+            <ul id="playlist">
+                <li data-src="hansarhos.mp4" class="active">Hansarhoş (Ana Parça)</li>
+                <li data-src="baska-sarki.mp4">Başka Güzel Şarkı</li>
+            </ul>
+
+            <div id="youtube-section">
+                <input type="url" id="youtubeLinkInput" placeholder="YouTube Linkini Yapıştır...">
+                <button id="addYoutubeBtn" class="animated-btn"><i class="fab fa-youtube"></i> YouTube Ekle</button>
+            </div>
+        </div>
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const videoElement = document.getElementById("myVideo");
-            const playButton = document.getElementById("playButton");
+    <footer>
+        <p>&copy; 2025 KAPTAN. Gücün Kaynağı: r.jina.ai (Simülasyon)</p>
+    </footer>
 
-            playButton.addEventListener("click", () => {
-                videoElement.play()
-                    .then(() => {
-                        playButton.style.display = "none";
-                        videoElement.style.display = "block";
-                    })
-                    .catch((err) => {
-                        console.error("Video oynatma hatası:", err);
-                        playButton.innerText = "Başlatılamadı 😔";
-                    });
-            });
-        });
-    </script>
-
-</body>
+    <script src="app.js"></script> </body>
 </html>
