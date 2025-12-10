@@ -41,6 +41,7 @@
 
     .searchBox {
         display: flex;
+        margin-bottom: 10px;
     }
 
     .searchBox input {
@@ -59,23 +60,15 @@
         background: rgba(255,255,255,0.1);
         cursor: pointer;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 10px;
     }
 
     .resultItem:hover {
         background: rgba(255,255,255,0.2);
     }
 
-    .thumb {
-        width: 60px;
-        height: 40px;
-        border-radius: 8px;
-        object-fit: cover;
-    }
-
     .plusBtn {
-        margin-left: auto;
         font-size: 20px;
         cursor: pointer;
     }
@@ -125,7 +118,7 @@
 </div>
 
 <div class="main">
-    <h2 id="nowPlaying">Çalan Şarkı Yok</h2>
+    <h2 id="nowPlaying">Çalan Şarkı</h2>
 
     <video id="localVideo" controls loop style="width:100%; border-radius:12px;">
         <source src="hansarhoş.mp4" type="video/mp4">
@@ -144,10 +137,7 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
-let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 let player;
-let playerReady = false;
-
 let localVideo = document.getElementById("localVideo");
 
 function onYouTubeIframeAPIReady() {
@@ -155,10 +145,7 @@ function onYouTubeIframeAPIReady() {
         height: "360",
         width: "640",
         videoId: "",
-        playerVars: { modestbranding: 1, rel: 0, controls: 1 },
-        events: {
-            onReady: () => { playerReady = true; }
-        }
+        playerVars: { modestbranding: 1, rel: 0, controls: 1 }
     });
 }
 
@@ -166,7 +153,8 @@ document.getElementById("searchInput").addEventListener("keyup", function () {
     let q = this.value.trim();
     if (!q) return;
 
-    fetch(`https://www.googleapis.com/youtube/v3/search?type=video&part=snippet&maxResults=6&q=${encodeURIComponent(q)}&key=${key}`)
+    // 🚀 Backend Proxy → 403 ÇÖZÜLDÜ
+    fetch(`http://localhost:3000/yt?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(data => {
             let box = document.getElementById("searchResults");
@@ -178,40 +166,21 @@ document.getElementById("searchInput").addEventListener("keyup", function () {
                 let title = v.snippet.title;
                 let id = v.id.videoId;
 
-                // thumbnail fix
-                let thumb =
-                    (v.snippet.thumbnails.high && v.snippet.thumbnails.high.url) ||
-                    (v.snippet.thumbnails.medium && v.snippet.thumbnails.medium.url) ||
-                    "https://via.placeholder.com/120x90?text=No+Image";
-
                 let div = document.createElement("div");
                 div.className = "resultItem";
-
                 div.innerHTML = `
-                    <img src="${thumb}" class="thumb" />
                     <span onclick="playYT('${id}', '${title}')">${title}</span>
                     <span class="plusBtn" onclick="addToList('${id}', '${title}')">+</span>
                 `;
-
                 box.appendChild(div);
             });
         });
 });
 
 function playYT(id, title) {
-    if (!playerReady) return alert("Oynatıcı yükleniyor, 1 saniye sonra tekrar dene kaptan!");
-
-    // Hansarhoş kapanıyor
-    localVideo.pause();
     localVideo.style.display = "none";
-
-    // Açılan videoyu göster
     document.getElementById("ytPlayerWrapper").style.display = "block";
-
-    // Şarkı başlığı
-    document.getElementById("nowPlaying").innerText = title;
-
-    // YouTube başlat
+    document.getElementById("nowPlaying").innerText = "Çalan: " + title;
     player.loadVideoById(id);
 }
 
