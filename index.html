@@ -73,31 +73,10 @@
         cursor: pointer;
     }
 
-    #videoPlayer {
-        width: 100%;
+    #videoPlayer iframe {
+        width: 100% !important;
+        height: 360px !important;
         border-radius: 12px;
-        margin-top: 20px;
-    }
-
-    #controls {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
-    }
-
-    button {
-        padding: 10px 20px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        background: linear-gradient(90deg, #ff4d4d, #ffcc00);
-        color: black;
-        font-weight: bold;
-        transition: 0.3s;
-    }
-
-    button:hover {
-        transform: scale(1.05);
     }
 </style>
 </head>
@@ -129,8 +108,8 @@
     </div>
 
     <div id="controls">
-        <button onclick="player.playVideo()">▶ Oynat</button>
-        <button onclick="player.pauseVideo()">⏸ Duraklat</button>
+        <button onclick="safePlay()">▶ Oynat</button>
+        <button onclick="safePause()">⏸ Duraklat</button>
     </div>
 </div>
 
@@ -139,15 +118,28 @@
 <script>
 let key = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 let player;
-let localVideo = document.getElementById("localVideo");
+let playerReady = false;
 
 function onYouTubeIframeAPIReady() {
     player = new YT.Player("videoPlayer", {
         height: "360",
         width: "640",
         videoId: "",
-        playerVars: { modestbranding: 1, rel: 0, controls: 1 }
+        playerVars: { modestbranding: 1, rel: 0, controls: 1 },
+        events: {
+            onReady: () => {
+                playerReady = true;
+            }
+        }
     });
+}
+
+function safePlay() {
+    if (playerReady) player.playVideo();
+}
+
+function safePause() {
+    if (playerReady) player.pauseVideo();
 }
 
 document.getElementById("searchInput").addEventListener("keyup", function () {
@@ -163,33 +155,41 @@ document.getElementById("searchInput").addEventListener("keyup", function () {
             if (!data.items) return;
 
             data.items.forEach(v => {
-                let title = v.snippet.title;
+                let title = v.snippet.title.replace(/"/g, "'");
                 let id = v.id.videoId;
 
                 let div = document.createElement("div");
                 div.className = "resultItem";
+
                 div.innerHTML = `
                     <span onclick="playYT('${id}', '${title}')">${title}</span>
                     <span class="plusBtn" onclick="addToList('${id}', '${title}')">+</span>
                 `;
+
                 box.appendChild(div);
             });
         });
 });
 
 function playYT(id, title) {
-    localVideo.style.display = "none";
+    if (!playerReady) {
+        console.log("Player hazır değil, bekletiliyor...");
+        setTimeout(() => playYT(id, title), 300);
+        return;
+    }
+
+    document.getElementById("localVideo").style.display = "none";
     document.getElementById("ytPlayerWrapper").style.display = "block";
+
     player.loadVideoById(id);
+    player.playVideo();
 }
 
 function addToList(id, title) {
-    let p = document.createElement("div");
-    p.className = "resultItem";
-    p.innerHTML = `
-        <span onclick="playYT('${id}', '${title}')">${title}</span>
-    `;
-    document.getElementById("playlist").appendChild(p);
+    let div = document.createElement("div");
+    div.className = "resultItem";
+    div.innerHTML = `<span onclick="playYT('${id}', '${title}')">${title}</span>`;
+    document.getElementById("playlist").appendChild(div);
 }
 </script>
 
