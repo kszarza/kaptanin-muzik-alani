@@ -1,280 +1,278 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Kaptanın Müzik Alanı</title>
-<style>
-  :root{
-    --accent:#ffcc00;
-    --accent-2:#ff4d4d;
-    --green:#1db954;
-    --bg1:#0e0e0e;
-    --bg2:#1b1b1b;
-  }
-  html,body{height:100%; margin:0; font-family:"Poppins",sans-serif; background:linear-gradient(135deg,var(--bg1),var(--bg2)); color:#fff}
-  .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:30px}
-  .container{width:100%; max-width:1100px; background:rgba(255,255,255,0.04); border-radius:18px; padding:26px; box-shadow:0 10px 30px rgba(0,0,0,0.6); backdrop-filter:blur(8px)}
-  h1{font-size:38px; margin:0 0 6px; background:linear-gradient(90deg,var(--accent-2),var(--accent)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
-  p.lead{margin:0 0 18px; opacity:0.8}
-  .player-row{display:flex; gap:20px; align-items:flex-start}
-  .left{flex:2}
-  .right{flex:1; min-width:220px}
-  #yt-player, #myVideoBox{width:100%; height:350px; border-radius:14px; overflow:hidden; background:#000; display:flex; align-items:center; justify-content:center}
-  #myVideo{width:100%; height:100%; object-fit:cover; display:block}
-  .controls{display:flex; gap:12px; justify-content:center; margin-top:14px}
-  .btn-anim{padding:12px 16px; border-radius:12px; border:none; cursor:pointer; font-weight:600; background:var(--green); color:#fff; transition:transform .16s, box-shadow .16s}
-  .btn-anim:hover{transform:translateY(-4px); box-shadow:0 10px 30px rgba(29,185,84,0.12)}
-  .btn-anim:active{transform:scale(.98)}
-  .search-row{display:flex; gap:10px; margin-top:18px}
-  #searchInput{flex:1; padding:12px 14px; border-radius:10px; border:none; font-size:15px}
-  .playbtn-primary{padding:12px 18px; border-radius:12px; background:linear-gradient(90deg,var(--accent-2),var(--accent)); border:none; color:#000; font-weight:700; cursor:pointer}
-  #playlist{list-style:none; padding:0; margin:0; max-height:390px; overflow-y:auto}
-  #playlist li{padding:10px; margin-bottom:9px; border-radius:10px; background:#111; cursor:pointer; transition:transform .12s, background .12s; display:flex; gap:10px; align-items:center}
-  #playlist li:hover{transform:translateY(-4px); background:#222}
-  .thumb{width:56px; height:56px; border-radius:6px; object-fit:cover; flex-shrink:0}
-  .meta{flex:1}
-  .meta .title{font-size:14px; font-weight:600}
-  .meta .sub{font-size:12px; opacity:0.6}
-  @media (max-width:900px){
-    .player-row{flex-direction:column}
-    #yt-player,#myVideoBox{height:260px}
-  }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaptan Player</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Poppins", sans-serif;
+            background: #0d0d0d;
+            color: #fff;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .left {
+            flex: 3;
+            padding: 30px;
+        }
+
+        .right {
+            flex: 1.5;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            padding: 20px;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 {
+            font-size: 40px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff4d4d, #ffcc00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: 350px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        #localVideo {
+            width: 100%;
+            border-radius: 15px;
+            display: block;
+        }
+
+        #playLocal {
+            margin-top: 15px;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #ff4d4d, #ffcc00);
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Arama kutusu */
+        #searchBox {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            margin-top: 20px;
+        }
+
+        /* Öneriler */
+        #suggestions {
+            background: rgba(255,255,255,0.08);
+            margin-top: 5px;
+            border-radius: 8px;
+            padding: 5px;
+            display: none;
+        }
+        .suggestItem {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .suggestItem:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* Playlist */
+        .playlist-item {
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.07);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .playlist-item:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        /* Kontroller */
+        .controls {
+            margin-top: 20px;
+        }
+        .controls button {
+            padding: 10px 18px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #222;
+            color: #fff;
+        }
+        .controls button:hover {
+            background: #444;
+        }
+    </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="container">
-    <h1>Kaptanın Müzik Alanı</h1>
-    <p class="lead">Arama yap, çalma listesine ekle, ileri/geri/durdur/başlat — videoysa video, değilse kapak gösterilir.</p>
 
-    <div class="player-row">
-      <div class="left">
-        <div id="myVideoBox" aria-hidden="false">
-          <!-- Local video: iki seçenek bırakıyorum, önce "hansarhoş.mp4" sonra yedek "hansarhos.mp4" -->
-          <video id="myVideo" loop playsinline style="display:none">
-            <!-- Türkçe 'ş' yüzünden dosya bulunmazsa yedek isim kontrolü yapılır -->
-            <source src="hansarhoş.mp4" type="video/mp4">
-            <source src="hansarhos.mp4" type="video/mp4">
-            Tarayıcınız video etiketini desteklemiyor.
-          </video>
-          <div id="yt-player-placeholder" style="width:100%; height:100%;"></div>
-        </div>
+    <div class="left">
+        <h1>Kaptan Player</h1>
+
+        <!-- Başlangıç lokal video -->
+        <video id="localVideo" controls playsinline>
+            <source src="hansarhoş.mp4" type="video/mp4" />
+        </video>
+        <button id="playLocal">▶ Lokal Videoyu Başlat</button>
+
+        <!-- YouTube videoları -->
+        <iframe id="videoPlayer" frameborder="0" allow="autoplay"></iframe>
 
         <div class="controls">
-          <button class="btn-anim" id="btn-back" title="Geri 10s">⏮ 10s</button>
-          <button class="btn-anim playbtn-primary" id="btn-play">▶ Başlat</button>
-          <button class="btn-anim" id="btn-pause">⏸ Duraklat</button>
-          <button class="btn-anim" id="btn-stop">⏹ Durdur</button>
-          <button class="btn-anim" id="btn-forward" title="İleri 10s">10s ⏭</button>
+            <button onclick="player.playVideo()">▶ Başlat</button>
+            <button onclick="player.pauseVideo()">⏸ Duraklat</button>
+            <button onclick="prevVideo()">⏮ Geri</button>
+            <button onclick="nextVideo()">⏭ İleri</button>
         </div>
 
-        <div class="search-row">
-          <input id="searchInput" placeholder="Şarkı veya video ara..." />
-          <button class="btn-anim" id="btn-search">🔍 Ara</button>
-          <button class="btn-anim" id="btn-add-link" title="YouTube linki yapıştır ve ekle">+ Link</button>
-        </div>
-      </div>
-
-      <div class="right">
-        <h3 style="margin-top:0">Çalma Listesi</h3>
-        <ul id="playlist"></ul>
-      </div>
+        <input id="searchBox" placeholder="Şarkı veya video ara..." />
+        <div id="suggestions"></div>
     </div>
-  </div>
-</div>
 
-<!-- YouTube iframe API -->
-<script src="https://www.youtube.com/iframe_api"></script>
+    <div class="right">
+        <h2>Playlist</h2>
+        <div id="playlist"></div>
+    </div>
+
+
 <script>
-let ytPlayer = null;
-let ytReady = false;
+
+let API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY"; // SENİN KEY
 let playlist = [];
-const maxPlaylist = 60;
-
-function localVideoIsVisible(){
-  const v = document.getElementById('myVideo');
-  return v && v.style.display !== 'none' && v.querySelector('source') && v.querySelector('source').getAttribute('src');
-}
-
-function playUnified(){
-  if(localVideoIsVisible()){
-    document.getElementById('myVideo').play().catch(()=>{});
-  } else if(ytReady && ytPlayer){
-    ytPlayer.playVideo();
-  }
-}
-function pauseUnified(){
-  if(localVideoIsVisible()){
-    document.getElementById('myVideo').pause();
-  } else if(ytReady && ytPlayer){
-    ytPlayer.pauseVideo();
-  }
-}
-function stopUnified(){
-  if(localVideoIsVisible()){
-    const v = document.getElementById('myVideo'); v.pause(); v.currentTime = 0;
-  } else if(ytReady && ytPlayer){
-    ytPlayer.stopVideo();
-  }
-}
-function forwardUnified(seconds=10){
-  if(localVideoIsVisible()){
-    const v=document.getElementById('myVideo'); v.currentTime = Math.min(v.duration || 99999, v.currentTime + seconds);
-  } else if(ytReady && ytPlayer){
-    const cur=ytPlayer.getCurrentTime(); ytPlayer.seekTo(cur + seconds, true);
-  }
-}
-function backwardUnified(seconds=10){
-  if(localVideoIsVisible()){
-    const v=document.getElementById('myVideo'); v.currentTime = Math.max(0, v.currentTime - seconds);
-  } else if(ytReady && ytPlayer){
-    const cur=ytPlayer.getCurrentTime(); ytPlayer.seekTo(Math.max(0, cur - seconds), true);
-  }
-}
-
-document.getElementById('btn-play').addEventListener('click', playUnified);
-document.getElementById('btn-pause').addEventListener('click', pauseUnified);
-document.getElementById('btn-stop').addEventListener('click', stopUnified);
-document.getElementById('btn-forward').addEventListener('click', ()=>forwardUnified(10));
-document.getElementById('btn-back').addEventListener('click', ()=>backwardUnified(10));
-
-const originalPlayButton = document.getElementById('btn-play');
-originalPlayButton.addEventListener('click', ()=> {
-  const v = document.getElementById('myVideo');
-  if(v && v.querySelector('source') && v.querySelector('source').getAttribute('src')){
-    // show local video and hide placeholder
-    v.style.display = 'block';
-    const ph = document.getElementById('yt-player-placeholder');
-    if(ph) ph.style.display = 'none';
-  }
-});
-
-function onYouTubeIframeAPIReady(){
-  ytPlayer = new YT.Player('yt-player-placeholder', {
-    height: '100%',
-    width: '100%',
-    videoId: '',
-    playerVars: { autoplay:0, controls:0, rel:0, modestbranding:1 },
-    events: {
-      onReady: () => { ytReady = true; },
-      onStateChange: (e)=> {
-        if(e.data === YT.PlayerState.ENDED){
-          playNextInPlaylist(true);
-        }
-      }
-    }
-  });
-}
-
-function updatePlaylistUI(){
-  const ul = document.getElementById('playlist');
-  ul.innerHTML = '';
-  playlist.forEach((it, idx) => {
-    const li = document.createElement('li');
-    const img = document.createElement('img'); img.src = it.thumb; img.className='thumb';
-    const meta = document.createElement('div'); meta.className='meta';
-    const title = document.createElement('div'); title.className='title'; title.textContent = it.title;
-    const sub = document.createElement('div'); sub.className='sub'; sub.textContent = `#${idx+1}`;
-    meta.appendChild(title); meta.appendChild(sub);
-    li.appendChild(img); li.appendChild(meta);
-    li.onclick = ()=>{ playFromPlaylist(idx); };
-    ul.appendChild(li);
-  });
-}
-
 let currentIndex = -1;
-function playFromPlaylist(index){
-  if(index<0 || index>=playlist.length) return;
-  const item = playlist[index];
-  currentIndex = index;
-  const v = document.getElementById('myVideo');
-  if(v) v.style.display='none';
-  if(ytReady && ytPlayer){
-    ytPlayer.loadVideoById(item.videoId);
-    document.getElementById('yt-player-placeholder').style.display='block';
-    if(v) v.style.display='none';
-  } else {
-    alert('YouTube oynatıcı yüklenemedi.');
-  }
+let player;
+
+/* ------------------------------
+   YouTube iFrame Player API
+--------------------------------*/
+let tag = document.createElement("script");
+tag.src = "https://www.youtube.com/iframe_api";
+document.body.appendChild(tag);
+
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player("videoPlayer", {
+        height: "350",
+        width: "100%",
+        videoId: "",
+        events: {
+            onReady: () => console.log("Player hazir!")
+        }
+    });
 }
 
-function playNextInPlaylist(advance=true){
-  if(playlist.length===0) return;
-  if(currentIndex < 0) currentIndex = 0;
-  else if(advance) currentIndex = (currentIndex + 1) % playlist.length;
-  playFromPlaylist(currentIndex);
-}
-
-function addToPlaylist(videoId, title, thumb){
-  if(playlist.length >= maxPlaylist) playlist.shift();
-  playlist.push({videoId, title, thumb});
-  updatePlaylistUI();
-  playFromPlaylist(playlist.length - 1);
-}
-
-document.getElementById('btn-add-link').addEventListener('click', ()=>{
-  const url = prompt('YouTube linkini yapıştır (örnek: https://www.youtube.com/watch?v=VIDEO_ID)');
-  if(!url) return;
-  const videoIdMatch = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/);
-  const id = videoIdMatch ? videoIdMatch[1] : null;
-  if(!id){ alert('Video ID bulunamadı. Doğru link yapıştır.'); return; }
-  const thumb = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-  addToPlaylist(id, 'YouTube Video', thumb);
+/* ------------------------------
+   Yerel video oynatma
+--------------------------------*/
+document.getElementById("playLocal").addEventListener("click", () => {
+    let vid = document.getElementById("localVideo");
+    vid.play()
+        .then(() => console.log("Lokal video oynuyor"))
+        .catch(() => alert("Başlatılamadı, tekrar dene!"));
 });
 
-async function searchYouTubeNoKey(query){
-  const proxy = 'https://r.jina.ai/http://www.youtube.com/results?search_query=';
-  const url = proxy + encodeURIComponent(query);
-  try{
-    const r = await fetch(url);
-    if(!r.ok) throw new Error('Proxy arama başarısız');
-    const text = await r.text();
-    const vidRegex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
-    const titleRegex = /"title":{"runs":\[\{"text":"([^"]+)"\}\]/g;
-    let vids = []; let tts = [];
-    let m;
-    while((m = vidRegex.exec(text)) && vids.length < 12){
-      vids.push(m[1]);
+
+/* ------------------------------
+   Arama - Öneriler
+--------------------------------*/
+document.getElementById("searchBox").addEventListener("input", async (e) => {
+    const q = e.target.value;
+
+    if (!q) {
+        document.getElementById("suggestions").style.display = "none";
+        return;
     }
-    while((m = titleRegex.exec(text)) && tts.length < vids.length){
-      tts.push(m[1]);
-    }
-    while(tts.length < vids.length) tts.push('YouTube Video');
-    const results = vids.map((id, i)=>({
-      videoId: id,
-      title: (tts[i] || `Video ${i+1}`),
-      thumb: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`
-    }));
-    return results;
-  }catch(err){
-    console.error('Arama hatası', err);
-    return [];
-  }
+
+    let url =
+`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=${encodeURIComponent(q)}&key=${API_KEY}`;
+
+    let res = await fetch(url);
+    let data = await res.json();
+
+    let box = document.getElementById("suggestions");
+    box.innerHTML = "";
+    box.style.display = "block";
+
+    data.items.forEach(item => {
+        let div = document.createElement("div");
+        div.className = "suggestItem";
+        div.innerText = item.snippet.title;
+        div.onclick = () => selectVideo(item.id.videoId, item.snippet.title);
+        box.appendChild(div);
+    });
+});
+
+
+/* ------------------------------
+   Video seçme
+--------------------------------*/
+function selectVideo(id, title) {
+
+    document.getElementById("localVideo").style.display = "none";
+    document.getElementById("playLocal").style.display = "none";
+
+    document.getElementById("videoPlayer").style.display = "block";
+
+    player.loadVideoById(id);
+
+    playlist.push({ id, title });
+    currentIndex = playlist.length - 1;
+
+    drawPlaylist();
 }
 
-document.getElementById('btn-search').addEventListener('click', async ()=>{
-  const q = document.getElementById('searchInput').value.trim();
-  if(!q) return;
-  const btn = document.getElementById('btn-search'); btn.disabled=true; btn.textContent='Aranıyor...';
-  const results = await searchYouTubeNoKey(q);
-  btn.disabled=false; btn.textContent='🔍 Ara';
-  if(!results || results.length===0){ alert('Sonuç bulunamadı veya proxy geçici olarak kapalı.'); return; }
-  for(let i=0;i<Math.min(6,results.length);i++){
-    const r = results[i];
-    addToPlaylist(r.videoId, r.title, r.thumb);
-  }
-});
 
-window.addEventListener('load', ()=>{
-  const v = document.getElementById('myVideo');
-  if(v && v.querySelector('source') && v.querySelector('source').getAttribute('src')){
-    v.style.display = 'none';
-    document.getElementById('yt-player-placeholder').style.display = 'block';
-  } else {
-    if(v) v.style.display='none';
-  }
-});
+/* ------------------------------
+   Playlist çiz
+--------------------------------*/
+function drawPlaylist() {
+    let area = document.getElementById("playlist");
+    area.innerHTML = "";
+
+    playlist.forEach((v, i) => {
+        let div = document.createElement("div");
+        div.className = "playlist-item";
+        div.innerText = v.title;
+        div.onclick = () => {
+            currentIndex = i;
+            player.loadVideoById(v.id);
+        };
+        area.appendChild(div);
+    });
+}
+
+/* ------------------------------
+   İleri - geri
+--------------------------------*/
+function nextVideo() {
+    if (currentIndex < playlist.length - 1) {
+        currentIndex++;
+        player.loadVideoById(playlist[currentIndex].id);
+    }
+}
+
+function prevVideo() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        player.loadVideoById(playlist[currentIndex].id);
+    }
+}
+
 </script>
+
 </body>
 </html>
