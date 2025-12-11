@@ -318,14 +318,21 @@ body {
 </body>
 </html>
 
-<script>
-/* =============================
-   KAPTAN — PART 2 (FULL)
-   ============================= */
+<script><!-- =============================
+   KAPTAN — PART 2 (DÜZELTİLMİŞ)
+   ============================= -->
 
+<script>
 const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 const MAX_RESULTS = 15;
 
+let ytPlayerMain = null;
+let searchResults = [];
+let playlist = [];
+let currentIndex = -1;
+let isPlaying = false;
+
+/* DOM ELEMANLARI */
 const resultsEl = document.getElementById("results");
 const playlistEl = document.getElementById("playlist");
 const searchInput = document.getElementById("searchInput");
@@ -336,19 +343,13 @@ const playBtn = document.getElementById("playBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
-let ytPlayerMain = null;
-let searchResults = [];
-let playlist = [];
-let currentIndex = -1;
-let isPlaying = false;
+/* =====================================
+   1 — YOUTUBE IFRAME API DOĞRU ŞEKİLDE YÜKLENİYOR
+   ===================================== */
 
-/* ----------- YOUTUBE API YÜKLE ----------- */
-let tag = document.createElement("script");
-tag.src = "https://www.youtube.com/iframe_api";
-document.body.appendChild(tag);
+window.onYouTubeIframeAPIReady = function () {
+    console.log("YT API Hazır! Player oluşturuluyor...");
 
-/* ----------- API HAZIR OLUNCA PLAYER OLUŞTUR ----------- */
-function onYouTubeIframeAPIReady() {
     ytPlayerMain = new YT.Player("yt-player", {
         height: "0",
         width: "0",
@@ -362,12 +363,16 @@ function onYouTubeIframeAPIReady() {
             playsinline: 1
         },
         events: {
+            onReady: () => console.log("Player Hazır!"),
             onStateChange: onMainStateChange
         }
     });
-}
+};
 
-/* ----------- PLAYER STATE ----------- */
+/* =====================================
+   2 — YOUTUBE PLAYER STATE
+   ===================================== */
+
 function onMainStateChange(e) {
     if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
@@ -382,7 +387,10 @@ function onMainStateChange(e) {
     }
 }
 
-/* ----------- SEARCH ----------- */
+/* =====================================
+   3 — YOUTUBE ARAMA
+   ===================================== */
+
 async function ytSearch(q) {
     if (!q.trim()) return [];
 
@@ -402,7 +410,10 @@ async function ytSearch(q) {
     return data.items || [];
 }
 
-/* ----------- SONUÇLARI ÇİZ ----------- */
+/* =====================================
+   4 — ARAMA SONUÇLARINI ÇİZ
+   ===================================== */
+
 function renderResults(list) {
     resultsEl.innerHTML = "";
     searchResults = list;
@@ -412,7 +423,6 @@ function renderResults(list) {
 
         let el = document.createElement("div");
         el.className = "result-item";
-        el.dataset.index = i;
 
         el.innerHTML = `
             <img src="${thumb}">
@@ -420,42 +430,41 @@ function renderResults(list) {
                 <div class="result-title">${it.snippet.title}</div>
                 <div style="opacity:.7">${it.snippet.channelTitle}</div>
             </div>
-            <button class="plusBtn" style="background:#1DB954;border:none;padding:6px 10px;border-radius:6px;cursor:pointer">+</button>
         `;
 
-        el.addEventListener("click", (e) => {
-            if (e.target.closest(".plusBtn")) return;
-            playFromResults(i);
-        });
-
-        el.querySelector(".plusBtn").addEventListener("click", (e) => {
-            e.stopPropagation();
-            addToPlaylist({
-                videoId: it.id.videoId,
-                title: it.snippet.title,
-                channel: it.snippet.channelTitle,
-                thumb
-            });
-        });
+        el.addEventListener("click", () => playFromResults(i));
 
         resultsEl.appendChild(el);
     });
 }
 
-/* ----------- SONUÇTAN ÇAL ----------- */
+/* =====================================
+   5 — SONUÇTAN ÇAL
+   ===================================== */
+
 function playFromResults(index) {
     const item = searchResults[index];
     if (!item) return;
+
+    if (!ytPlayerMain || typeof ytPlayerMain.loadVideoById !== "function") {
+        console.error("Player hazır değil!");
+        return;
+    }
 
     playerThumb.src = item.snippet.thumbnails.medium.url;
     playerTitle.textContent = item.snippet.title;
     playerAuthor.textContent = item.snippet.channelTitle;
 
+    console.log("Video yükleniyor:", item.id.videoId);
+
     ytPlayerMain.loadVideoById(item.id.videoId);
     ytPlayerMain.playVideo();
 }
 
-/* ----------- PLAYLIST ----------- */
+/* =====================================
+   6 — PLAYLIST EKLEME
+   ===================================== */
+
 function addToPlaylist(song) {
     playlist.push(song);
     renderPlaylist();
@@ -466,7 +475,6 @@ function renderPlaylist() {
     playlist.forEach((s, i) => {
         let el = document.createElement("div");
         el.className = "song-item";
-
         el.innerHTML = `
             <img src="${s.thumb}">
             <div class="song-info">
@@ -474,17 +482,23 @@ function renderPlaylist() {
                 <div class="author">${s.channel}</div>
             </div>
         `;
-
         el.addEventListener("click", () => playTrack(i));
-
         playlistEl.appendChild(el);
     });
 }
 
-/* ----------- PLAY TRACK ----------- */
+/* =====================================
+   7 — PLAY TRACK
+   ===================================== */
+
 function playTrack(i) {
     currentIndex = i;
     const s = playlist[i];
+
+    if (!ytPlayerMain || typeof ytPlayerMain.loadVideoById !== "function") {
+        console.error("Player daha hazır olmadı!");
+        return;
+    }
 
     playerThumb.src = s.thumb;
     playerTitle.textContent = s.title;
@@ -494,7 +508,10 @@ function playTrack(i) {
     ytPlayerMain.playVideo();
 }
 
-/* ----------- NEXT / PREV ----------- */
+/* =====================================
+   8 — NEXT / PREV
+   ===================================== */
+
 function nextTrack() {
     if (currentIndex < playlist.length - 1) playTrack(currentIndex + 1);
 }
@@ -503,18 +520,21 @@ function prevTrack() {
     if (currentIndex > 0) playTrack(currentIndex - 1);
 }
 
-/* ----------- PLAY / PAUSE ----------- */
+/* =====================================
+   9 — PLAY/PAUSE BUTONU
+   ===================================== */
+
 playBtn.addEventListener("click", () => {
     if (!ytPlayerMain) return;
 
-    if (isPlaying) {
-        ytPlayerMain.pauseVideo();
-    } else {
-        ytPlayerMain.playVideo();
-    }
+    if (isPlaying) ytPlayerMain.pauseVideo();
+    else ytPlayerMain.playVideo();
 });
 
-/* ----------- LIVE SEARCH ----------- */
+/* =====================================
+   10 — CANLI SEARCH
+   ===================================== */
+
 let searchTimeout;
 searchInput.addEventListener("input", () => {
     clearTimeout(searchTimeout);
@@ -523,7 +543,6 @@ searchInput.addEventListener("input", () => {
             resultsEl.innerHTML = "";
             return;
         }
-
         let list = await ytSearch(searchInput.value);
         renderResults(list);
     }, 300);
@@ -532,3 +551,6 @@ searchInput.addEventListener("input", () => {
 nextBtn.addEventListener("click", nextTrack);
 prevBtn.addEventListener("click", prevTrack);
 </script>
+
+<!-- YOUTUBE IFRAME API — SAYFANIN EN SONUNDA -->
+<script src="https://www.youtube.com/iframe_api"></script>
