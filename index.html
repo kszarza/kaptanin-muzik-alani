@@ -315,16 +315,13 @@ body {
 </html>
 
 <script>
-
 /* =============================
-   KAPTAN — PART 2 (FULL FIXED)
+   KAPTAN — PART 2 (FULL)
    ============================= */
 
-/* -------- CONFIG ---------- */
 const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 const MAX_RESULTS = 15;
 
-/* -------- DOM refs --------- */
 const resultsEl = document.getElementById("results");
 const playlistEl = document.getElementById("playlist");
 const searchInput = document.getElementById("searchInput");
@@ -335,50 +332,38 @@ const playBtn = document.getElementById("playBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
-/* -------- state ---------- */
 let ytPlayerMain = null;
 let searchResults = [];
 let playlist = [];
 let currentIndex = -1;
 let isPlaying = false;
 
-
-/* ------------------------------------------
-   YOUTUBE API YÜKLE
------------------------------------------- */
+/* ----------- YOUTUBE API YÜKLE ----------- */
 let tag = document.createElement("script");
 tag.src = "https://www.youtube.com/iframe_api";
 document.body.appendChild(tag);
 
-
-/* ------------------------------------------
-   API HAZIR → PLAYER OLUŞTUR
------------------------------------------- */
+/* ----------- API HAZIR OLUNCA PLAYER OLUŞTUR ----------- */
 function onYouTubeIframeAPIReady() {
     ytPlayerMain = new YT.Player("yt-player", {
         height: "0",
         width: "0",
+        videoId: "",
         playerVars: {
-            autoplay: 0,
             controls: 0,
-            disablekb: 1,
+            autoplay: 0,
             rel: 0,
+            disablekb: 1,
             modestbranding: 1,
-            showinfo: 0,
-            playsinline: 1,
-            origin: window.location.origin
+            playsinline: 1
         },
         events: {
-            onReady: () => console.log("YT Player Hazır!"),
             onStateChange: onMainStateChange
         }
     });
 }
 
-
-/* ------------------------------------------
-   PLAYER STATE DEĞİŞİMİ
------------------------------------------- */
+/* ----------- PLAYER STATE ----------- */
 function onMainStateChange(e) {
     if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
@@ -393,14 +378,11 @@ function onMainStateChange(e) {
     }
 }
 
-
-/* ------------------------------------------
-   YOUTUBE SEARCH (API)
------------------------------------------- */
+/* ----------- SEARCH ----------- */
 async function ytSearch(q) {
     if (!q.trim()) return [];
 
-    let url =
+    const url =
         "https://www.googleapis.com/youtube/v3/search?" +
         new URLSearchParams({
             key: API_KEY,
@@ -412,23 +394,17 @@ async function ytSearch(q) {
         });
 
     let res = await fetch(url);
-    if (!res.ok) return [];
     let data = await res.json();
     return data.items || [];
 }
 
-
-/* ------------------------------------------
-   ARAMA SONUÇLARINI RENDER ET
------------------------------------------- */
+/* ----------- SONUÇLARI ÇİZ ----------- */
 function renderResults(list) {
     resultsEl.innerHTML = "";
     searchResults = list;
 
     list.forEach((it, i) => {
         const thumb = it.snippet.thumbnails.medium.url;
-        const title = it.snippet.title;
-        const ch = it.snippet.channelTitle;
 
         let el = document.createElement("div");
         el.className = "result-item";
@@ -437,25 +413,23 @@ function renderResults(list) {
         el.innerHTML = `
             <img src="${thumb}">
             <div style="flex:1">
-                <div class="result-title">${title}</div>
-                <div style="opacity:.7">${ch}</div>
+                <div class="result-title">${it.snippet.title}</div>
+                <div style="opacity:.7">${it.snippet.channelTitle}</div>
             </div>
             <button class="plusBtn" style="background:#1DB954;border:none;padding:6px 10px;border-radius:6px;cursor:pointer">+</button>
         `;
 
-        /* ► Tıkla & Oynat */
         el.addEventListener("click", (e) => {
             if (e.target.closest(".plusBtn")) return;
             playFromResults(i);
         });
 
-        /* ➕ Playlist’e ekle */
         el.querySelector(".plusBtn").addEventListener("click", (e) => {
             e.stopPropagation();
             addToPlaylist({
                 videoId: it.id.videoId,
-                title,
-                channel: ch,
+                title: it.snippet.title,
+                channel: it.snippet.channelTitle,
                 thumb
             });
         });
@@ -464,31 +438,20 @@ function renderResults(list) {
     });
 }
 
-
-/* ------------------------------------------
-   SONUÇTAN ŞARKI OYNAT
------------------------------------------- */
+/* ----------- SONUÇTAN ÇAL ----------- */
 function playFromResults(index) {
     const item = searchResults[index];
     if (!item) return;
-
-    const vid = item.id.videoId;
 
     playerThumb.src = item.snippet.thumbnails.medium.url;
     playerTitle.textContent = item.snippet.title;
     playerAuthor.textContent = item.snippet.channelTitle;
 
-    ytPlayerMain.loadVideoById(vid);
+    ytPlayerMain.loadVideoById(item.id.videoId);
     ytPlayerMain.playVideo();
-
-    isPlaying = true;
-    playBtn.innerText = "⏸";
 }
 
-
-/* ------------------------------------------
-   PLAYLIST
------------------------------------------- */
+/* ----------- PLAYLIST ----------- */
 function addToPlaylist(song) {
     playlist.push(song);
     renderPlaylist();
@@ -499,6 +462,7 @@ function renderPlaylist() {
     playlist.forEach((s, i) => {
         let el = document.createElement("div");
         el.className = "song-item";
+
         el.innerHTML = `
             <img src="${s.thumb}">
             <div class="song-info">
@@ -513,14 +477,10 @@ function renderPlaylist() {
     });
 }
 
-
-/* ------------------------------------------
-   PLAY A TRACK FROM PLAYLIST
------------------------------------------- */
+/* ----------- PLAY TRACK ----------- */
 function playTrack(i) {
     currentIndex = i;
     const s = playlist[i];
-    if (!s) return;
 
     playerThumb.src = s.thumb;
     playerTitle.textContent = s.title;
@@ -528,69 +488,43 @@ function playTrack(i) {
 
     ytPlayerMain.loadVideoById(s.videoId);
     ytPlayerMain.playVideo();
-
-    isPlaying = true;
-    playBtn.innerText = "⏸";
 }
 
-
-/* ------------------------------------------
-   NEXT / PREV
------------------------------------------- */
+/* ----------- NEXT / PREV ----------- */
 function nextTrack() {
-    if (currentIndex < playlist.length - 1) {
-        playTrack(currentIndex + 1);
-    }
+    if (currentIndex < playlist.length - 1) playTrack(currentIndex + 1);
 }
 
 function prevTrack() {
-    if (currentIndex > 0) {
-        playTrack(currentIndex - 1);
-    }
+    if (currentIndex > 0) playTrack(currentIndex - 1);
 }
 
-
-/* ------------------------------------------
-   PLAY / PAUSE
------------------------------------------- */
+/* ----------- PLAY / PAUSE ----------- */
 playBtn.addEventListener("click", () => {
     if (!ytPlayerMain) return;
 
     if (isPlaying) {
         ytPlayerMain.pauseVideo();
-        isPlaying = false;
-        playBtn.innerText = "▶";
     } else {
         ytPlayerMain.playVideo();
-        isPlaying = true;
-        playBtn.innerText = "⏸";
     }
 });
 
-
-/* ------------------------------------------
-   SEARCH (LIVE)
------------------------------------------- */
+/* ----------- LIVE SEARCH ----------- */
 let searchTimeout;
 searchInput.addEventListener("input", () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
-        let q = searchInput.value.trim();
-        if (!q) {
+        if (!searchInput.value.trim()) {
             resultsEl.innerHTML = "";
             return;
         }
-        let list = await ytSearch(q);
+
+        let list = await ytSearch(searchInput.value);
         renderResults(list);
     }, 300);
 });
 
-
-/* ------------------------------------------
-   NEXT / PREV BUTTONS
------------------------------------------- */
 nextBtn.addEventListener("click", nextTrack);
 prevBtn.addEventListener("click", prevTrack);
-
 </script>
-</html>
