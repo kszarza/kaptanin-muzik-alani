@@ -315,8 +315,9 @@ body {
 </html>
 
 <script>
+
 /* =============================
-   KAPTAN — PART 2 (FULL)
+   KAPTAN — PART 2 (FULL FIXED)
    ============================= */
 
 /* -------- CONFIG ---------- */
@@ -341,57 +342,60 @@ let playlist = [];
 let currentIndex = -1;
 let isPlaying = false;
 
+
 /* ------------------------------------------
-   LOAD YOUTUBE API
+   YOUTUBE API YÜKLE
 ------------------------------------------ */
 let tag = document.createElement("script");
 tag.src = "https://www.youtube.com/iframe_api";
 document.body.appendChild(tag);
 
+
 /* ------------------------------------------
-   YT READY → PLAYER OLUŞTUR
+   API HAZIR → PLAYER OLUŞTUR
 ------------------------------------------ */
 function onYouTubeIframeAPIReady() {
     ytPlayerMain = new YT.Player("yt-player", {
         height: "0",
         width: "0",
-        videoId: "",
         playerVars: {
             autoplay: 0,
             controls: 0,
             disablekb: 1,
             rel: 0,
             modestbranding: 1,
+            showinfo: 0,
             playsinline: 1,
             origin: window.location.origin
         },
         events: {
+            onReady: () => console.log("YT Player Hazır!"),
             onStateChange: onMainStateChange
         }
     });
 }
 
+
 /* ------------------------------------------
-   PLAYER STATE
+   PLAYER STATE DEĞİŞİMİ
 ------------------------------------------ */
 function onMainStateChange(e) {
     if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
         playBtn.innerText = "⏸";
     }
-
     if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         playBtn.innerText = "▶";
     }
-
     if (e.data === YT.PlayerState.ENDED) {
         nextTrack();
     }
 }
 
+
 /* ------------------------------------------
-   YOUTUBE SEARCH
+   YOUTUBE SEARCH (API)
 ------------------------------------------ */
 async function ytSearch(q) {
     if (!q.trim()) return [];
@@ -410,12 +414,12 @@ async function ytSearch(q) {
     let res = await fetch(url);
     if (!res.ok) return [];
     let data = await res.json();
-
     return data.items || [];
 }
 
+
 /* ------------------------------------------
-   RENDER SEARCH RESULTS
+   ARAMA SONUÇLARINI RENDER ET
 ------------------------------------------ */
 function renderResults(list) {
     resultsEl.innerHTML = "";
@@ -439,13 +443,13 @@ function renderResults(list) {
             <button class="plusBtn" style="background:#1DB954;border:none;padding:6px 10px;border-radius:6px;cursor:pointer">+</button>
         `;
 
-        /* TIKLAYINCA ŞARKIYI OYNAT */
+        /* ► Tıkla & Oynat */
         el.addEventListener("click", (e) => {
             if (e.target.closest(".plusBtn")) return;
             playFromResults(i);
         });
 
-        /* PLAYLISTE EKLE */
+        /* ➕ Playlist’e ekle */
         el.querySelector(".plusBtn").addEventListener("click", (e) => {
             e.stopPropagation();
             addToPlaylist({
@@ -460,8 +464,9 @@ function renderResults(list) {
     });
 }
 
+
 /* ------------------------------------------
-   PLAY FROM SEARCH RESULTS
+   SONUÇTAN ŞARKI OYNAT
 ------------------------------------------ */
 function playFromResults(index) {
     const item = searchResults[index];
@@ -480,8 +485,9 @@ function playFromResults(index) {
     playBtn.innerText = "⏸";
 }
 
+
 /* ------------------------------------------
-   PLAYLISTE EKLE
+   PLAYLIST
 ------------------------------------------ */
 function addToPlaylist(song) {
     playlist.push(song);
@@ -507,6 +513,7 @@ function renderPlaylist() {
     });
 }
 
+
 /* ------------------------------------------
    PLAY A TRACK FROM PLAYLIST
 ------------------------------------------ */
@@ -526,6 +533,7 @@ function playTrack(i) {
     playBtn.innerText = "⏸";
 }
 
+
 /* ------------------------------------------
    NEXT / PREV
 ------------------------------------------ */
@@ -541,8 +549,9 @@ function prevTrack() {
     }
 }
 
+
 /* ------------------------------------------
-   PLAY / PAUSE BUTTON
+   PLAY / PAUSE
 ------------------------------------------ */
 playBtn.addEventListener("click", () => {
     if (!ytPlayerMain) return;
@@ -558,8 +567,9 @@ playBtn.addEventListener("click", () => {
     }
 });
 
+
 /* ------------------------------------------
-   SEARCH INPUT (LIVE SEARCH)
+   SEARCH (LIVE)
 ------------------------------------------ */
 let searchTimeout;
 searchInput.addEventListener("input", () => {
@@ -575,71 +585,12 @@ searchInput.addEventListener("input", () => {
     }, 300);
 });
 
+
 /* ------------------------------------------
    NEXT / PREV BUTTONS
 ------------------------------------------ */
 nextBtn.addEventListener("click", nextTrack);
 prevBtn.addEventListener("click", prevTrack);
 
-
-// ===========================
-//   GLOBAL PLAYER
-// ===========================
-let ytPlayerMain;
-
-// YouTube API hazır olduğunda çalışacak
-function onYouTubeIframeAPIReady() {
-    ytPlayerMain = new YT.Player("yt-player-main", {
-        height: "0",
-        width: "0",
-        playerVars: {
-            autoplay: 0,
-            controls: 0,
-            disablekb: 1,
-            modestbranding: 1,
-            rel: 0,
-            showinfo: 0
-        },
-        events: {
-            onReady: () => console.log("YT Player Hazır!")
-        }
-    });
-}
-
-// ===========================
-//   SONUÇTAN TIKLAYIP OYNATMA
-// ===========================
-function playFromResults(videoId, title, thumb) {
-    if (!ytPlayerMain || typeof ytPlayerMain.loadVideoById !== "function") {
-        console.error("YT Player hazır değil!");
-        return;
-    }
-
-    ytPlayerMain.loadVideoById(videoId);
-    ytPlayerMain.playVideo();
-
-    document.getElementById("current-title").innerText = title;
-    document.getElementById("current-thumb").src = thumb;
-    document.getElementById("player-area").style.display = "flex";
-}
-
-// ===========================
-//   PLAY/PAUSE BUTONLARI
-// ===========================
-document.getElementById("play-btn").addEventListener("click", () => {
-    if (ytPlayerMain && ytPlayerMain.playVideo) ytPlayerMain.playVideo();
-});
-
-document.getElementById("pause-btn").addEventListener("click", () => {
-    if (ytPlayerMain && ytPlayerMain.pauseVideo) ytPlayerMain.pauseVideo();
-});
 </script>
-
-<!-- YOUTUBE API KODU EN SONDA OLACAK -->
-<script src="https://www.youtube.com/iframe_api"></script>
-<script>
-
-</script>  <!-- ← EKSİK OLAN KAPANAN TAG -->
-
-</body>
 </html>
