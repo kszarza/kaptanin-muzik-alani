@@ -1,65 +1,79 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaptanify</title>
 
 <style>
     body {
         margin: 0;
         background: #000;
+        color: #fff;
         font-family: Arial, sans-serif;
-        color: white;
     }
 
     /* NAVBAR */
     .navbar {
-        width: 100%;
         height: 70px;
         background: #111;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 40px;
-        box-sizing: border-box;
+        padding: 0 35px;
         border-bottom: 1px solid #222;
     }
 
-    .nav-left {
-        font-size: 24px;
+    .logo {
+        font-size: 26px;
         font-weight: bold;
         color: #bb44ff;
     }
 
-    .nav-center {
-        display: flex;
-        gap: 25px;
-        font-size: 17px;
+    .search-box {
+        position: relative;
     }
 
-    .nav-center div {
-        cursor: pointer;
-    }
-
-    .nav-right input {
-        padding: 10px 20px;
-        width: 250px;
+    .search-box input {
+        width: 260px;
+        padding: 12px 20px;
         border-radius: 30px;
         border: none;
         outline: none;
     }
 
+    .suggestions {
+        position: absolute;
+        top: 45px;
+        width: 260px;
+        max-height: 250px;
+        overflow-y: auto;
+        background: #111;
+        border-radius: 10px;
+        border: 1px solid #222;
+        display: none;
+        z-index: 20;
+    }
+
+    .s-item {
+        padding: 10px;
+        cursor: pointer;
+        border-bottom: 1px solid #222;
+    }
+
+    .s-item:hover {
+        background: #333;
+    }
+
     /* HERO */
     .hero {
-        width: 100%;
         padding: 100px 20px;
         text-align: center;
-        background: linear-gradient(180deg, #3a005f 0%, #000 100%);
+        background: linear-gradient(180deg, #440066, #000);
     }
 
     .hero h1 {
-        font-size: 55px;
+        font-size: 54px;
         font-weight: 900;
     }
 
@@ -69,109 +83,64 @@
 
     .hero p {
         margin-top: 10px;
-        color: #cccccc;
+        color: #ccc;
     }
 
     .hero input {
-        margin-top: 30px;
-        padding: 15px 25px;
-        width: 400px;
-        border: none;
+        margin-top: 35px;
+        padding: 14px 20px;
+        width: 450px;
         border-radius: 30px;
+        border: none;
         outline: none;
-        font-size: 16px;
-    }
-
-    .btns {
-        margin-top: 25px;
-        display: flex;
-        gap: 20px;
-        justify-content: center;
-    }
-
-    .btn {
-        padding: 14px 25px;
-        border-radius: 30px;
-        border: none;
-        cursor: pointer;
         font-size: 17px;
-        font-weight: bold;
     }
 
-    .btn-play {
-        background: #bb44ff;
-        color: white;
-    }
-
-    .btn-info {
-        background: #333;
-        color: white;
-    }
-
-    /* RESULTS */
-    .section-title {
-        margin: 40px 0 15px 40px;
-        font-size: 25px;
-        font-weight: bold;
-    }
-
-    .results {
+    /* RESULT CARDS */
+    #results {
+        padding: 40px;
         display: flex;
         flex-wrap: wrap;
-        gap: 20px;
-        padding: 0 40px 80px 40px;
+        gap: 25px;
     }
 
-    .song-card {
-        width: 220px;
+    .card {
+        width: 230px;
         background: #111;
-        padding: 15px;
-        border-radius: 10px;
+        padding: 12px;
+        border-radius: 12px;
         cursor: pointer;
-        transition: 0.2s;
+        transition: .2s;
     }
 
-    .song-card:hover {
+    .card:hover {
         background: #222;
         transform: scale(1.05);
     }
 
-    .song-card img {
+    .card img {
         width: 100%;
         border-radius: 10px;
     }
 
-    .song-title {
-        font-size: 16px;
-        margin-top: 8px;
-    }
-
-    .song-author {
-        color: #aaa;
-        font-size: 14px;
-        margin-top: 4px;
-    }
-
     /* PLAYER */
     .player {
-        width: 100%;
         height: 100px;
         background: #111;
+        border-top: 1px solid #333;
         position: fixed;
         bottom: 0;
-        left: 0;
-        border-top: 1px solid #333;
-        display: flex;
+        width: 100%;
+        display: none;
         align-items: center;
         justify-content: space-between;
         padding: 0 30px;
-        box-sizing: border-box;
     }
 
     .player-info {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
     }
 
     .player-info img {
@@ -182,157 +151,136 @@
 
     .player-controls button {
         background: none;
+        color: #fff;
         border: none;
-        color: white;
-        font-size: 22px;
         cursor: pointer;
-        margin: 0 8px;
+        font-size: 25px;
+        margin: 0 5px;
     }
 
-    .player-audio {
-        width: 280px;
-    }
 </style>
 </head>
-
 <body>
 
 <!-- NAVBAR -->
 <div class="navbar">
-    <div class="nav-left">Kaptanify</div>
+    <div class="logo">Kaptanify</div>
 
-    <div class="nav-center">
-        <div>Ana Sayfa</div>
-        <div>Keşfet</div>
-        <div>Favoriler</div>
-    </div>
-
-    <div class="nav-right">
-        <input id="topSearch" type="text" placeholder="Şarkı ara..." />
+    <div class="search-box">
+        <input id="searchTop" type="text" placeholder="Şarkı ara...">
+        <div id="suggestions" class="suggestions"></div>
     </div>
 </div>
 
 <!-- HERO -->
 <div class="hero">
     <h1>Senin Müziğin, <span class="purple">Senin Ritmin</span></h1>
-    <p>Sınırsız müzik ve videolar keşfet. YouTube tarafından desteklenen milyonlarca içerik.</p>
+    <p>YouTube destekli sınırsız müzik keşfet.</p>
 
-    <input id="mainSearch" type="text" placeholder="Şarkı, sanatçı ya da çalma listesi ara..." />
-
-    <div class="btns">
-        <button class="btn btn-play">Keşfetmeye Başla</button>
-        <button class="btn btn-info">Daha Fazla Bilgi</button>
-    </div>
+    <input id="mainSearch" type="text" placeholder="Şarkı, sanatçı ara...">
 </div>
 
-<!-- SEARCH RESULTS -->
-<div class="section-title">Arama Sonuçları</div>
-<div class="results" id="results"></div>
+<!-- RESULTS -->
+<div id="results"></div>
 
 <!-- PLAYER -->
-<div class="player">
+<div class="player" id="player">
     <div class="player-info">
-        <img id="playerImg" src="" />
+        <img id="pImg">
         <div>
-            <div id="playerTitle">-</div>
-            <div id="playerAuthor" style="color:#aaa;">-</div>
+            <div id="pTitle"></div>
+            <div id="pAuthor" style="color:#aaa"></div>
         </div>
     </div>
 
-    <div class="player-controls">
-        <button id="prevBtn">⏮</button>
-        <button id="playBtn">▶</button>
-        <button id="nextBtn">⏭</button>
-    </div>
-
-    <audio id="audioPlayer" class="player-audio" controls></audio>
+    <audio id="audio" controls style="width:300px"></audio>
 </div>
 
 <script>
-const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";  // 🔥 kendi API KEY'İNİ YAZ
-
-let searchInputMain = document.getElementById("mainSearch");
-let searchInputTop = document.getElementById("topSearch");
-let resultsBox = document.getElementById("results");
-let currentIndex = 0;
+const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";  // 🔥 Senin API key gelecek
 let songs = [];
+let suggestionsBox = document.getElementById("suggestions");
+let topSearch = document.getElementById("searchTop");
+let mainSearch = document.getElementById("mainSearch");
 
-/* YouTube Search */
-async function searchSongs(query) {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${query}&videoCategoryId=10&maxResults=30&key=${API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data.items;
+/* ----------------- YOUTUBE SEARCH ----------------- */
+async function ytSearch(q) {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=20&q=${q}&key=${API_KEY}`;
+    const req = await fetch(url);
+    const data = await req.json();
+    return data.items || [];
 }
 
-function renderResults(list) {
-    resultsBox.innerHTML = "";
+/* ----------------- SUGGESTIONS ----------------- */
+topSearch.addEventListener("input", async () => {
+    let q = topSearch.value.trim();
+    suggestionsBox.innerHTML = "";
+    if (!q) return suggestionsBox.style.display = "none";
 
-    list.forEach((item, i) => {
-        let card = document.createElement("div");
-        card.className = "song-card";
-        card.innerHTML = `
+    let list = await ytSearch(q);
+
+    list.slice(0, 5).forEach(item => {
+        let div = document.createElement("div");
+        div.className = "s-item";
+        div.textContent = item.snippet.title;
+        div.onclick = () => {
+            topSearch.value = item.snippet.title;
+            suggestionsBox.style.display = "none";
+            loadResults(item.snippet.title);
+        };
+        suggestionsBox.appendChild(div);
+    });
+
+    suggestionsBox.style.display = "block";
+});
+
+/* ----------------- ENTER SEARCH ----------------- */
+mainSearch.addEventListener("keyup", async (e) => {
+    if (e.key === "Enter") {
+        loadResults(mainSearch.value);
+    }
+});
+
+topSearch.addEventListener("keyup", async (e) => {
+    if (e.key === "Enter") {
+        loadResults(topSearch.value);
+        suggestionsBox.style.display = "none";
+    }
+});
+
+/* ----------------- LOAD RESULTS ----------------- */
+async function loadResults(q) {
+    songs = await ytSearch(q);
+
+    let area = document.getElementById("results");
+    area.innerHTML = "";
+
+    songs.forEach((item, i) => {
+        let c = document.createElement("div");
+        c.className = "card";
+        c.innerHTML = `
             <img src="${item.snippet.thumbnails.medium.url}">
-            <div class="song-title">${item.snippet.title}</div>
-            <div class="song-author">${item.snippet.channelTitle}</div>
+            <div style="margin-top:8px;font-size:16px">${item.snippet.title}</div>
+            <div style="color:#aaa;font-size:14px">${item.snippet.channelTitle}</div>
         `;
-
-        card.onclick = () => playSong(i);
-
-        resultsBox.appendChild(card);
+        c.onclick = () => playSong(i);
+        area.appendChild(c);
     });
 }
 
-/* PLAYER */
+/* ----------------- PLAYER ----------------- */
 function playSong(i) {
-    currentIndex = i;
-    let song = songs[i];
+    let item = songs[i];
 
-    document.getElementById("playerImg").src = song.snippet.thumbnails.medium.url;
-    document.getElementById("playerTitle").innerText = song.snippet.title;
-    document.getElementById("playerAuthor").innerText = song.snippet.channelTitle;
+    document.getElementById("pImg").src = item.snippet.thumbnails.medium.url;
+    document.getElementById("pTitle").innerText = item.snippet.title;
+    document.getElementById("pAuthor").innerText = item.snippet.channelTitle;
 
-    document.getElementById("audioPlayer").src =
-        `https://www.youtube.com/watch?v=${song.id.videoId}`;
+    document.getElementById("audio").src = `https://www.youtube.com/watch?v=${item.id.videoId}`;
 
-    document.getElementById("audioPlayer").play();
-    document.getElementById("playBtn").innerText = "⏸";
+    document.getElementById("player").style.display = "flex";
 }
 
-/* Search Events */
-searchInputMain.addEventListener("keyup", async (e) => {
-    if (e.key === "Enter") {
-        songs = await searchSongs(searchInputMain.value);
-        renderResults(songs);
-    }
-});
-
-searchInputTop.addEventListener("keyup", async (e) => {
-    if (e.key === "Enter") {
-        songs = await searchSongs(searchInputTop.value);
-        renderResults(songs);
-    }
-});
-
-/* Player Buttons */
-document.getElementById("playBtn").onclick = () => {
-    let player = document.getElementById("audioPlayer");
-    if (player.paused) {
-        player.play();
-        playBtn.innerText = "⏸";
-    } else {
-        player.pause();
-        playBtn.innerText = "▶";
-    }
-};
-
-document.getElementById("nextBtn").onclick = () => {
-    if (currentIndex < songs.length - 1) playSong(currentIndex + 1);
-};
-
-document.getElementById("prevBtn").onclick = () => {
-    if (currentIndex > 0) playSong(currentIndex - 1);
-};
 </script>
 
 </body>
