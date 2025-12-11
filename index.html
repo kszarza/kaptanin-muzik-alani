@@ -315,15 +315,18 @@ body {
 </html>
 
 <script>
-// ==================== CONFIG =====================
+/* =============================
+   KAPTAN — PART 2 (FULL)
+   ============================= */
+
+/* -------- CONFIG ---------- */
 const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 const MAX_RESULTS = 15;
 
-// ==================== DOM ========================
+/* -------- DOM refs --------- */
 const resultsEl = document.getElementById("results");
 const playlistEl = document.getElementById("playlist");
 const searchInput = document.getElementById("searchInput");
-
 const playerThumb = document.getElementById("playerThumb");
 const playerTitle = document.getElementById("playerTitle");
 const playerAuthor = document.getElementById("playerAuthor");
@@ -331,197 +334,251 @@ const playBtn = document.getElementById("playBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
-// ==================== STATE ========================
+/* -------- state ---------- */
+let ytPlayerMain = null;
 let searchResults = [];
 let playlist = [];
 let currentIndex = -1;
-let ytPlayer = null;
 let isPlaying = false;
 
-// ==================== LOAD YT LIB ====================
+/* ------------------------------------------
+   LOAD YOUTUBE API
+------------------------------------------ */
 let tag = document.createElement("script");
 tag.src = "https://www.youtube.com/iframe_api";
 document.body.appendChild(tag);
 
-// YT Hazır olunca player kuruluyor
+/* ------------------------------------------
+   YT READY → PLAYER OLUŞTUR
+------------------------------------------ */
 function onYouTubeIframeAPIReady() {
-    ytPlayer = new YT.Player("yt-player", {
+    ytPlayerMain = new YT.Player("yt-player", {
         height: "0",
         width: "0",
         videoId: "",
         playerVars: {
             autoplay: 0,
             controls: 0,
-            modestbranding: 1,
-            rel: 0,
-            fs: 0,
             disablekb: 1,
+            rel: 0,
+            modestbranding: 1,
             playsinline: 1,
             origin: window.location.origin
         },
         events: {
-            onStateChange: playerState
+            onStateChange: onMainStateChange
         }
     });
 }
 
-function playerState(e) {
+/* ------------------------------------------
+   PLAYER STATE
+------------------------------------------ */
+function onMainStateChange(e) {
     if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
         playBtn.innerText = "⏸";
     }
-    if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+
+    if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         playBtn.innerText = "▶";
     }
+
     if (e.data === YT.PlayerState.ENDED) {
         nextTrack();
     }
 }
 
-// ==================== SEARCH ============================
-async function searchYouTube(query) {
-    if (!query) return [];
+/* ------------------------------------------
+   YOUTUBE SEARCH
+------------------------------------------ */
+async function ytSearch(q) {
+    if (!q.trim()) return [];
 
-    let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=${MAX_RESULTS}&key=${API_KEY}&q=${encodeURIComponent(query)}`;
+    let url =
+        "https://www.googleapis.com/youtube/v3/search?" +
+        new URLSearchParams({
+            key: API_KEY,
+            part: "snippet",
+            q,
+            maxResults: MAX_RESULTS,
+            type: "video",
+            videoCategoryId: "10"
+        });
 
     let res = await fetch(url);
+    if (!res.ok) return [];
     let data = await res.json();
+
     return data.items || [];
 }
 
-// ==================== RENDER RESULTS =====================
-function renderResults(items) {
+/* ------------------------------------------
+   RENDER SEARCH RESULTS
+------------------------------------------ */
+function renderResults(list) {
     resultsEl.innerHTML = "";
-    searchResults = items;
+    searchResults = list;
 
-    items.forEach((item, i) => {
-        let vid = item.id.videoId;
-        let title = item.snippet.title;
-        let channel = item.snippet.channelTitle;
-        let thumb = item.snippet.thumbnails.medium.url;
+    list.forEach((it, i) => {
+        const thumb = it.snippet.thumbnails.medium.url;
+        const title = it.snippet.title;
+        const ch = it.snippet.channelTitle;
 
-        let div = document.createElement("div");
-        div.className = "result-item";
-        div.dataset.index = i;
+        let el = document.createElement("div");
+        el.className = "result-item";
+        el.dataset.index = i;
 
-        div.innerHTML = `
+        el.innerHTML = `
             <img src="${thumb}">
-            <div>
+            <div style="flex:1">
                 <div class="result-title">${title}</div>
-                <div class="channel">${channel}</div>
+                <div style="opacity:.7">${ch}</div>
             </div>
-            <button class="addBtn" style="background:#1DB954;border:none;padding:8px;border-radius:8px;cursor:pointer">+</button>
+            <button class="plusBtn" style="background:#1DB954;border:none;padding:6px 10px;border-radius:6px;cursor:pointer">+</button>
         `;
 
-        // Şarkıya tıklayınca oynat
-        div.addEventListener("click", e => {
-            if (e.target.classList.contains("addBtn")) return; // + tuşu
+        /* TIKLAYINCA ŞARKIYI OYNAT */
+        el.addEventListener("click", (e) => {
+            if (e.target.closest(".plusBtn")) return;
             playFromResults(i);
         });
 
-        // + tıklayınca playlist'e ekle
-        div.querySelector(".addBtn").addEventListener("click", e => {
+        /* PLAYLISTE EKLE */
+        el.querySelector(".plusBtn").addEventListener("click", (e) => {
             e.stopPropagation();
             addToPlaylist({
-                videoId: vid,
+                videoId: it.id.videoId,
                 title,
-                thumb,
-                channel
+                channel: ch,
+                thumb
             });
         });
 
-        resultsEl.appendChild(div);
+        resultsEl.appendChild(el);
     });
 }
 
-// ==================== SEARCH INPUT =======================
-searchInput.addEventListener("input", async () => {
-    let q = searchInput.value.trim();
-    if (q.length === 0) {
-        resultsEl.innerHTML = "";
-        return;
-    }
+/* ------------------------------------------
+   PLAY FROM SEARCH RESULTS
+------------------------------------------ */
+function playFromResults(index) {
+    const item = searchResults[index];
+    if (!item) return;
 
-    let items = await searchYouTube(q);
-    renderResults(items);
-});
+    const vid = item.id.videoId;
 
-// ==================== PLAYLIST ===========================
-function addToPlaylist(obj) {
-    playlist.push(obj);
-    renderPlaylist();
-}
+    playerThumb.src = item.snippet.thumbnails.medium.url;
+    playerTitle.textContent = item.snippet.title;
+    playerAuthor.textContent = item.snippet.channelTitle;
 
-function renderPlaylist() {
-    playlistEl.innerHTML = "";
-
-    playlist.forEach((song, i) => {
-        let d = document.createElement("div");
-        d.className = "song-item";
-        d.dataset.index = i;
-
-        d.innerHTML = `
-            <img src="${song.thumb}">
-            <div class="song-info">
-                <div class="title">${song.title}</div>
-                <div class="author">${song.channel}</div>
-            </div>
-        `;
-
-        d.addEventListener("click", () => playTrack(i));
-        playlistEl.appendChild(d);
-    });
-}
-
-// ==================== PLAYER ==============================
-function playTrack(i) {
-    currentIndex = i;
-    let s = playlist[i];
-
-    playerThumb.src = s.thumb;
-    playerTitle.innerText = s.title;
-    playerAuthor.innerText = s.channel;
-
-    ytPlayer.loadVideoById(s.videoId);
-    ytPlayer.playVideo();
+    ytPlayerMain.loadVideoById(vid);
+    ytPlayerMain.playVideo();
 
     isPlaying = true;
     playBtn.innerText = "⏸";
 }
 
-function playFromResults(i) {
-    let r = searchResults[i];
-    addToPlaylist({
-        videoId: r.id.videoId,
-        title: r.snippet.title,
-        thumb: r.snippet.thumbnails.medium.url,
-        channel: r.snippet.channelTitle
-    });
-
-    playTrack(playlist.length - 1);
+/* ------------------------------------------
+   PLAYLISTE EKLE
+------------------------------------------ */
+function addToPlaylist(song) {
+    playlist.push(song);
+    renderPlaylist();
 }
 
-// ==================== CONTROLS ===========================
+function renderPlaylist() {
+    playlistEl.innerHTML = "";
+    playlist.forEach((s, i) => {
+        let el = document.createElement("div");
+        el.className = "song-item";
+        el.innerHTML = `
+            <img src="${s.thumb}">
+            <div class="song-info">
+                <div class="title">${s.title}</div>
+                <div class="author">${s.channel}</div>
+            </div>
+        `;
+
+        el.addEventListener("click", () => playTrack(i));
+
+        playlistEl.appendChild(el);
+    });
+}
+
+/* ------------------------------------------
+   PLAY A TRACK FROM PLAYLIST
+------------------------------------------ */
+function playTrack(i) {
+    currentIndex = i;
+    const s = playlist[i];
+    if (!s) return;
+
+    playerThumb.src = s.thumb;
+    playerTitle.textContent = s.title;
+    playerAuthor.textContent = s.channel;
+
+    ytPlayerMain.loadVideoById(s.videoId);
+    ytPlayerMain.playVideo();
+
+    isPlaying = true;
+    playBtn.innerText = "⏸";
+}
+
+/* ------------------------------------------
+   NEXT / PREV
+------------------------------------------ */
+function nextTrack() {
+    if (currentIndex < playlist.length - 1) {
+        playTrack(currentIndex + 1);
+    }
+}
+
+function prevTrack() {
+    if (currentIndex > 0) {
+        playTrack(currentIndex - 1);
+    }
+}
+
+/* ------------------------------------------
+   PLAY / PAUSE BUTTON
+------------------------------------------ */
 playBtn.addEventListener("click", () => {
-    if (!ytPlayer) return;
+    if (!ytPlayerMain) return;
+
     if (isPlaying) {
-        ytPlayer.pauseVideo();
+        ytPlayerMain.pauseVideo();
+        isPlaying = false;
         playBtn.innerText = "▶";
     } else {
-        ytPlayer.playVideo();
+        ytPlayerMain.playVideo();
+        isPlaying = true;
         playBtn.innerText = "⏸";
     }
 });
 
-prevBtn.addEventListener("click", prevTrack);
+/* ------------------------------------------
+   SEARCH INPUT (LIVE SEARCH)
+------------------------------------------ */
+let searchTimeout;
+searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+        let q = searchInput.value.trim();
+        if (!q) {
+            resultsEl.innerHTML = "";
+            return;
+        }
+        let list = await ytSearch(q);
+        renderResults(list);
+    }, 300);
+});
+
+/* ------------------------------------------
+   NEXT / PREV BUTTONS
+------------------------------------------ */
 nextBtn.addEventListener("click", nextTrack);
+prevBtn.addEventListener("click", prevTrack);
 
-function prevTrack() {
-    if (currentIndex > 0) playTrack(currentIndex - 1);
-}
-
-function nextTrack() {
-    if (currentIndex < playlist.length - 1) playTrack(currentIndex + 1);
-}
 </script>
