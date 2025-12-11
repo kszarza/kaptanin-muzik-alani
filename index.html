@@ -1,287 +1,509 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kaptanify</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kaptanify — Spotify Style YouTube Player</title>
 <style>
-    body {
-        margin: 0;
-        background: #000;
-        color: #fff;
-        font-family: Arial, sans-serif;
-    }
-
-    /* NAVBAR */
-    .navbar {
-        height: 70px;
-        background: #111;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 35px;
-        border-bottom: 1px solid #222;
-    }
-
-    .logo {
-        font-size: 26px;
-        font-weight: bold;
-        color: #bb44ff;
-    }
-
-    .search-box {
-        position: relative;
-    }
-
-    .search-box input {
-        width: 260px;
-        padding: 12px 20px;
-        border-radius: 30px;
-        border: none;
-        outline: none;
-    }
-
-    .suggestions {
-        position: absolute;
-        top: 45px;
-        width: 260px;
-        max-height: 250px;
-        overflow-y: auto;
-        background: #111;
-        border-radius: 10px;
-        border: 1px solid #222;
-        display: none;
-        z-index: 20;
-    }
-
-    .s-item {
-        padding: 10px;
-        cursor: pointer;
-        border-bottom: 1px solid #222;
-    }
-
-    .s-item:hover {
-        background: #333;
-    }
-
-    /* HERO */
-    .hero {
-        padding: 100px 20px;
-        text-align: center;
-        background: linear-gradient(180deg, #440066, #000);
-    }
-
-    .hero h1 {
-        font-size: 54px;
-        font-weight: 900;
-    }
-
-    .purple {
-        color: #bb44ff;
-    }
-
-    .hero p {
-        margin-top: 10px;
-        color: #ccc;
-    }
-
-    .hero input {
-        margin-top: 35px;
-        padding: 14px 20px;
-        width: 450px;
-        border-radius: 30px;
-        border: none;
-        outline: none;
-        font-size: 17px;
-    }
-
-    /* RESULT CARDS */
-    #results {
-        padding: 40px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 25px;
-    }
-
-    .card {
-        width: 230px;
-        background: #111;
-        padding: 12px;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: .2s;
-    }
-
-    .card:hover {
-        background: #222;
-        transform: scale(1.05);
-    }
-
-    .card img {
-        width: 100%;
-        border-radius: 10px;
-    }
-
-    /* PLAYER */
-    .player {
-        height: 100px;
-        background: #111;
-        border-top: 1px solid #333;
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        display: none;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 30px;
-    }
-
-    .player-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .player-info img {
-        width: 65px;
-        height: 65px;
-        border-radius: 5px;
-    }
-
-    .player-controls button {
-        background: none;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        font-size: 25px;
-        margin: 0 5px;
-    }
-
+  :root{
+    --bg:#0b0b0b; --card:#121212; --muted:#9a9a9a; --accent:#1db954; --accent2:#bb44ff;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#080808,#0f0f0f);color:#fff;font-family:Inter,Segoe UI,Arial,Helvetica,sans-serif}
+  /* Layout */
+  .app{display:flex;min-height:100vh;flex-direction:column}
+  .topbar{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#080808;border-bottom:1px solid rgba(255,255,255,0.03)}
+  .brand{display:flex;gap:14px;align-items:center;font-weight:800;font-size:20px;color:var(--accent2)}
+  .nav{display:flex;gap:18px;align-items:center;color:#cfcfcf}
+  .search-inline{position:relative}
+  .search-inline input{width:320px;padding:10px 14px;border-radius:999px;border:none;background:#121212;color:#fff;outline:none}
+  /* main */
+  .main{display:flex;gap:22px;padding:28px;flex:1}
+  .left{width:300px;min-height:400px;background:transparent}
+  .left .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:18px;border-radius:12px}
+  .right{flex:1;display:flex;flex-direction:column}
+  .hero{background:linear-gradient(90deg,#20102f,#0b0b0b);padding:28px;border-radius:12px;margin-bottom:18px}
+  .hero h1{margin:0;font-size:34px}
+  .hero p{color:var(--muted);margin-top:8px}
+  /* results grid */
+  .sectionTitle{font-size:18px;margin:8px 0 12px;color:#eaeaea}
+  .resultsGrid{display:flex;flex-wrap:wrap;gap:18px}
+  .card{width:200px;background:var(--card);border-radius:10px;padding:10px;box-sizing:border-box;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+  .card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(0,0,0,0.6)}
+  .thumb{width:100%;height:112px;object-fit:cover;border-radius:8px;background:#222}
+  .title{font-size:14px;margin-top:8px;line-height:1.2;height:34px;overflow:hidden}
+  .channel{font-size:12px;color:var(--muted);margin-top:6px}
+  .card .plusBtn{position:absolute;right:8px;top:8px;background:var(--accent);color:#000;border-radius:8px;padding:4px 7px;font-weight:700;border:none;cursor:pointer}
+  /* suggestions list */
+  .searchSuggestions{position:absolute;top:42px;left:0;width:320px;background:#0f0f0f;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.6);max-height:300px;overflow:auto;display:none;z-index:50}
+  .searchSuggestions div{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.02);cursor:pointer}
+  .searchSuggestions div:hover{background:#171717}
+  /* playlist */
+  .playlist{margin-top:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:12px;border-radius:10px}
+  .playlistItem{padding:8px;border-radius:8px;margin-bottom:8px;background:#0f0f0f;display:flex;align-items:center;gap:8px;cursor:pointer}
+  .playlistItem:hover{background:#151515}
+  .playlistItem img{width:48px;height:48px;border-radius:6px;object-fit:cover}
+  .playlistMeta{font-size:13px}
+  /* player bar */
+  .playerBar{position:fixed;left:0;right:0;bottom:0;height:92px;background:linear-gradient(180deg, rgba(10,10,10,0.9), rgba(5,5,5,0.95));display:flex;align-items:center;padding:12px 22px;box-shadow:0 -6px 30px rgba(0,0,0,0.6);z-index:60}
+  .p-left{display:flex;align-items:center;gap:14px}
+  .p-left img{width:72px;height:72px;border-radius:8px;object-fit:cover;background:#222}
+  .p-meta{display:flex;flex-direction:column}
+  .p-title{font-weight:700}
+  .p-artist{color:var(--muted);font-size:13px;margin-top:4px}
+  .p-controls{margin-left:40px;display:flex;align-items:center;gap:10px}
+  .p-controls button{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:8px;border-radius:8px}
+  .p-progress{margin-left:18px;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+  .progressBar{width:420px;height:6px;background:#1a1a1a;border-radius:6px;overflow:hidden;position:relative}
+  .progressFill{height:100%;background:linear-gradient(90deg,var(--accent),#2ad48a);width:0%}
+  /* equalizer animation */
+  .eq{display:inline-flex;gap:3px;align-items:end;height:30px}
+  .eq div{width:4px;background:var(--accent);height:6px;border-radius:2px;animation:bar 800ms infinite ease-in-out}
+  .eq div:nth-child(2){animation-delay:100ms}
+  .eq div:nth-child(3){animation-delay:200ms}
+  .eq div:nth-child(4){animation-delay:300ms}
+  @keyframes bar{0%{height:6px}50%{height:20px}100%{height:6px}}
+  /* responsive */
+  @media(max-width:980px){
+    .search-inline input{width:200px}
+    .resultsGrid{justify-content:center}
+    .card{width:160px}
+    .progressBar{width:220px}
+  }
 </style>
 </head>
 <body>
-
-<!-- NAVBAR -->
-<div class="navbar">
-    <div class="logo">Kaptanify</div>
-
-    <div class="search-box">
-        <input id="searchTop" type="text" placeholder="Şarkı ara...">
-        <div id="suggestions" class="suggestions"></div>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">KAPTANIFY</div>
+    <div class="nav">
+      <div>Ana Sayfa</div>
+      <div>Keşfet</div>
+      <div>Favoriler</div>
     </div>
-</div>
+    <div class="search-inline">
+      <input id="topSearch" placeholder="Şarkı, sanatçı ara..." autocomplete="off" />
+      <div id="suggestBox" class="searchSuggestions"></div>
+    </div>
+  </div>
 
-<!-- HERO -->
-<div class="hero">
-    <h1>Senin Müziğin, <span class="purple">Senin Ritmin</span></h1>
-    <p>YouTube destekli sınırsız müzik keşfet.</p>
+  <div class="main">
+    <div class="left">
+      <div class="panel">
+        <div style="font-weight:700;margin-bottom:8px">Arama</div>
+        <input id="leftSearch" placeholder="Hemen ara..." style="width:100%;padding:10px;border-radius:10px;border:none;background:#0f0f0f;color:#fff;outline:none" />
+        <div class="sectionTitle" style="margin-top:12px">Çalma Listesi</div>
+        <div id="playlist" class="playlist"></div>
+      </div>
+    </div>
 
-    <input id="mainSearch" type="text" placeholder="Şarkı, sanatçı ara...">
-</div>
-
-<!-- RESULTS -->
-<div id="results"></div>
-
-<!-- PLAYER -->
-<div class="player" id="player">
-    <div class="player-info">
-        <img id="pImg">
-        <div>
-            <div id="pTitle"></div>
-            <div id="pAuthor" style="color:#aaa"></div>
+    <div class="right">
+      <div class="hero">
+        <h1>Kaptanın Müzik Alanı</h1>
+        <p style="color:#cfcfcf">YouTube tabanlı, Spotify görünümünde oynatıcı. Kartların üzerine gelince 7–8s preview (sessiz), tıklayınca tam oynat.</p>
+        <div style="margin-top:12px">
+          <input id="mainSearch" placeholder="Şarkı, sanatçı veya albüm ara..." style="width:60%;padding:12px;border-radius:999px;border:none;background:#121212;color:#fff;outline:none" />
         </div>
-    </div>
+      </div>
 
-    <audio id="audio" controls style="width:300px"></audio>
+      <div style="padding:20px 0">
+        <div class="sectionTitle">Arama Sonuçları</div>
+        <div id="results" class="resultsGrid"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
+<!-- Player bar -->
+<div id="playerBar" class="playerBar" style="display:none">
+  <div class="p-left">
+    <img id="playerImg" src="" alt="kapak" />
+    <div class="p-meta">
+      <div id="playerTitle" class="p-title">—</div>
+      <div id="playerArtist" class="p-artist">—</div>
+    </div>
+    <div style="margin-left:12px" id="eqWrap" title="çalıyor">
+      <div class="eq" id="eqAnim" style="display:none">
+        <div></div><div></div><div></div><div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center">
+    <div class="p-controls">
+      <button id="prevBtn">⏮</button>
+      <button id="playBtn">▶</button>
+      <button id="nextBtn">⏭</button>
+    </div>
+
+    <div class="p-progress">
+      <div id="currentTime">0:00</div>
+      <div class="progressBar"><div id="progressFill" class="progressFill"></div></div>
+      <div id="duration">0:00</div>
+    </div>
+  </div>
+</div>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";  // 🔥 Senin API key gelecek
-let songs = [];
-let suggestionsBox = document.getElementById("suggestions");
-let topSearch = document.getElementById("searchTop");
-let mainSearch = document.getElementById("mainSearch");
+/* ========== CONFIG ========== */
+const API_KEY = "YOUR_YOUTUBE_DATA_API_KEY"; // <-- BURA'YA KENDİ KEY'İNİ KOY
+const RESULTS_CONTAINER = document.getElementById('results');
+const SUGGEST_BOX = document.getElementById('suggestBox');
+const TOP_SEARCH = document.getElementById('topSearch');
+const MAIN_SEARCH = document.getElementById('mainSearch');
+const PLAYLIST_DIV = document.getElementById('playlist');
 
-/* ----------------- YOUTUBE SEARCH ----------------- */
-async function ytSearch(q) {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=20&q=${q}&key=${API_KEY}`;
-    const req = await fetch(url);
-    const data = await req.json();
-    return data.items || [];
+let ytPlayerMain = null;      // main player (bottom bar)
+let previewPlayer = null;     // preview iframe player (created on hover)
+let previewHost = null;       // DOM node where preview iframe attaches
+let songs = [];               // current search results
+let playlist = [];            // queue
+let currentIndex = -1;
+let isPlaying = false;
+let progressInterval = null;
+
+/* ---------- Helper time format ---------- */
+function formatTime(s){
+  s = Math.max(0, Math.floor(s));
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
 }
 
-/* ----------------- SUGGESTIONS ----------------- */
-topSearch.addEventListener("input", async () => {
-    let q = topSearch.value.trim();
-    suggestionsBox.innerHTML = "";
-    if (!q) return suggestionsBox.style.display = "none";
+/* ---------- YouTube IFrame API ready ---------- */
+function onYouTubeIframeAPIReady(){
+  // create a hidden div for main player
+  const mainHost = document.createElement('div');
+  mainHost.id = 'yt-main-host';
+  mainHost.style.display = 'none';
+  document.body.appendChild(mainHost);
 
-    let list = await ytSearch(q);
+  ytPlayerMain = new YT.Player(mainHost, {
+    height: '0', width: '0',
+    videoId: '',
+    playerVars: { controls: 1, modestbranding: 1, rel: 0 },
+    events: {
+      onStateChange: onMainStateChange,
+      onReady: () => { /* ready */ }
+    }
+  });
+}
 
-    list.slice(0, 5).forEach(item => {
-        let div = document.createElement("div");
-        div.className = "s-item";
-        div.textContent = item.snippet.title;
-        div.onclick = () => {
-            topSearch.value = item.snippet.title;
-            suggestionsBox.style.display = "none";
-            loadResults(item.snippet.title);
-        };
-        suggestionsBox.appendChild(div);
+/* ---------- Main player state change handler ---------- */
+function onMainStateChange(e){
+  const playBtn = document.getElementById('playBtn');
+  const eq = document.getElementById('eqAnim');
+  if(e.data === YT.PlayerState.PLAYING){
+    isPlaying = true;
+    playBtn.innerText = '⏸';
+    eq.style.display = 'inline-flex';
+    startProgressTicker();
+  } else if(e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.BUFFERING){
+    isPlaying = false;
+    playBtn.innerText = '▶';
+    eq.style.display = 'none';
+    stopProgressTicker();
+  } else if(e.data === YT.PlayerState.ENDED){
+    // autoplay next
+    nextTrack();
+  } else {
+    // other states
+  }
+}
+
+/* ---------- Progress ticker ---------- */
+function startProgressTicker(){
+  stopProgressTicker();
+  progressInterval = setInterval(()=>{
+    try{
+      const current = ytPlayerMain.getCurrentTime();
+      const duration = ytPlayerMain.getDuration() || 0;
+      document.getElementById('currentTime').innerText = formatTime(current);
+      document.getElementById('duration').innerText = duration ? formatTime(duration) : '0:00';
+      const pct = duration ? Math.min(100, (current/duration)*100) : 0;
+      document.getElementById('progressFill').style.width = pct + '%';
+    }catch(err){}
+  },400);
+}
+function stopProgressTicker(){ if(progressInterval){ clearInterval(progressInterval); progressInterval = null; } }
+
+/* ---------- Search (YouTube Data API) ---------- */
+async function ytSearch(q){
+  if(!q) return [];
+  const endpoint = 'https://www.googleapis.com/youtube/v3/search';
+  const params = new URLSearchParams({
+    part: 'snippet',
+    q,
+    type: 'video',
+    maxResults: '24',
+    key: API_KEY,
+    videoCategoryId: '10' // music (helps)
+  });
+  const res = await fetch(`${endpoint}?${params.toString()}`);
+  if(!res.ok){
+    console.error('YT Search failed', res.status);
+    return [];
+  }
+  const data = await res.json();
+  return data.items || [];
+}
+
+/* ---------- Render results ---------- */
+function renderResults(list){
+  songs = list; // store
+  RESULTS_CONTAINER.innerHTML = '';
+  list.forEach((it, idx) => {
+    const vid = it.id.videoId;
+    const title = it.snippet.title;
+    const ch = it.snippet.channelTitle;
+    const thumb = (it.snippet.thumbnails && (it.snippet.thumbnails.medium?.url || it.snippet.thumbnails.default?.url)) || '';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.videoId = vid;
+    card.innerHTML = `
+      <button class="plusBtn" title="Listeye ekle">+</button>
+      <img class="thumb" src="${thumb}" loading="lazy" />
+      <div class="title">${title}</div>
+      <div class="channel">${ch}</div>
+    `;
+
+    // attach preview on hover
+    card.addEventListener('mouseenter', (ev) => {
+      // show 7-8s preview (mute)
+      startPreview(vid, ev.currentTarget);
+    });
+    card.addEventListener('mouseleave', stopPreview);
+
+    // main click: play full
+    card.addEventListener('click', (ev) => {
+      // if clicked plusBtn, handled separately
+      if(ev.target.closest('.plusBtn')) return;
+      playTrackByIndex(idx);
     });
 
-    suggestionsBox.style.display = "block";
-});
-
-/* ----------------- ENTER SEARCH ----------------- */
-mainSearch.addEventListener("keyup", async (e) => {
-    if (e.key === "Enter") {
-        loadResults(mainSearch.value);
-    }
-});
-
-topSearch.addEventListener("keyup", async (e) => {
-    if (e.key === "Enter") {
-        loadResults(topSearch.value);
-        suggestionsBox.style.display = "none";
-    }
-});
-
-/* ----------------- LOAD RESULTS ----------------- */
-async function loadResults(q) {
-    songs = await ytSearch(q);
-
-    let area = document.getElementById("results");
-    area.innerHTML = "";
-
-    songs.forEach((item, i) => {
-        let c = document.createElement("div");
-        c.className = "card";
-        c.innerHTML = `
-            <img src="${item.snippet.thumbnails.medium.url}">
-            <div style="margin-top:8px;font-size:16px">${item.snippet.title}</div>
-            <div style="color:#aaa;font-size:14px">${item.snippet.channelTitle}</div>
-        `;
-        c.onclick = () => playSong(i);
-        area.appendChild(c);
+    // plus button
+    const plus = card.querySelector('.plusBtn');
+    plus.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      addToPlaylist({videoId:vid,title,thumb});
     });
+
+    RESULTS_CONTAINER.appendChild(card);
+  });
 }
 
-/* ----------------- PLAYER ----------------- */
-function playSong(i) {
-    let item = songs[i];
+/* ---------- PREVIEW logic (single ephemeral player) ---------- */
+function startPreview(videoId, cardElement){
+  // create host overlay inside card if not exist
+  stopPreview(); // ensure no other preview
+  previewHost = document.createElement('div');
+  previewHost.style.position = 'absolute';
+  previewHost.style.left = '8px';
+  previewHost.style.top = '8px';
+  previewHost.style.width = 'calc(100% - 16px)';
+  previewHost.style.height = '112px';
+  previewHost.style.borderRadius = '8px';
+  previewHost.style.overflow = 'hidden';
+  previewHost.style.zIndex = 30;
+  previewHost.style.background = '#000';
+  cardElement.appendChild(previewHost);
 
-    document.getElementById("pImg").src = item.snippet.thumbnails.medium.url;
-    document.getElementById("pTitle").innerText = item.snippet.title;
-    document.getElementById("pAuthor").innerText = item.snippet.channelTitle;
+  // create small iframe player via YT.Player
+  // choose random start between 8s and 40s to avoid intros (best-effort)
+  const startSec = Math.floor(Math.random() * 40) + 8;
+  const endSec = startSec + 7; // 7 seconds preview
 
-    document.getElementById("audio").src = `https://www.youtube.com/watch?v=${item.id.videoId}`;
+  // create iframe container
+  const previewDiv = document.createElement('div');
+  previewDiv.id = 'yt-preview-' + Date.now();
+  previewDiv.style.width = '100%';
+  previewDiv.style.height = '100%';
+  previewHost.appendChild(previewDiv);
 
-    document.getElementById("player").style.display = "flex";
+  // create player
+  previewPlayer = new YT.Player(previewDiv, {
+    height: '100%',
+    width: '100%',
+    videoId: videoId,
+    playerVars: {
+      autoplay: 1,
+      controls: 0,
+      start: startSec,
+      end: endSec,
+      mute: 1,
+      modestbranding: 1,
+      playsinline: 1,
+      rel: 0
+    },
+    events: {
+      onReady: (e) => {
+        try{ e.target.playVideo(); }catch(e){}
+      },
+      onStateChange: (s) => {
+        // if ended (the short clip), attempt replay for continuous preview
+        if(s.data === YT.PlayerState.ENDED){
+          try{ previewPlayer.seekTo(startSec); previewPlayer.playVideo(); }catch(e){}
+        }
+      }
+    }
+  });
 }
 
+function stopPreview(){
+  try{
+    if(previewPlayer && previewPlayer.destroy) previewPlayer.destroy();
+  }catch(e){}
+  previewPlayer = null;
+  try{ if(previewHost && previewHost.parentNode) previewHost.parentNode.removeChild(previewHost); }catch(e){}
+  previewHost = null;
+}
+
+/* ---------- Playlist functions ---------- */
+function addToPlaylist(item){
+  playlist.push(item);
+  renderPlaylist();
+}
+function renderPlaylist(){
+  PLAYLIST_DIV.innerHTML = '';
+  playlist.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'playlistItem';
+    el.innerHTML = `<img src="${p.thumb}"><div class="playlistMeta">${p.title}</div>`;
+    el.addEventListener('click', ()=>{ playTrackFromPlaylist(i); });
+    PLAYLIST_DIV.appendChild(el);
+  });
+}
+
+/* ---------- Play track handlers ---------- */
+function playTrackByIndex(i){
+  if(!songs[i]) return;
+  const it = songs[i];
+  const id = it.id.videoId;
+  const thumb = (it.snippet.thumbnails && (it.snippet.thumbnails.medium?.url || it.snippet.thumbnails.default?.url)) || '';
+  const title = it.snippet.title;
+  const channel = it.snippet.channelTitle;
+  startMainPlayback(id,title,channel,thumb);
+}
+
+function playTrackFromPlaylist(i){
+  const it = playlist[i];
+  if(!it) return;
+  startMainPlayback(it.videoId,it.title,'',it.thumb);
+}
+
+/* ---------- start main playback ---------- */
+function startMainPlayback(videoId,title,channel,thumb){
+  // show player bar
+  document.getElementById('playerBar').style.display = 'flex';
+  document.getElementById('playerImg').src = thumb;
+  document.getElementById('playerTitle').innerText = title;
+  document.getElementById('playerArtist').innerText = channel || '';
+
+  // load into main hidden YT player (use loadVideoById)
+  // ensure ytPlayerMain exists
+  if(ytPlayerMain && ytPlayerMain.loadVideoById){
+    // show eq animation
+    document.getElementById('eqAnim').style.display = 'inline-flex';
+    ytPlayerMain.loadVideoById({videoId:videoId});
+    ytPlayerMain.playVideo();
+  } else {
+    // fallback: try again shortly
+    setTimeout(()=> startMainPlayback(videoId,title,channel,thumb),300);
+  }
+}
+
+/* ---------- control buttons ---------- */
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  if(!ytPlayerMain) return;
+  const state = ytPlayerMain.getPlayerState();
+  if(state === YT.PlayerState.PLAYING){
+    ytPlayerMain.pauseVideo();
+  } else {
+    ytPlayerMain.playVideo();
+  }
+});
+document.getElementById('nextBtn').addEventListener('click', ()=> nextTrack());
+document.getElementById('prevBtn').addEventListener('click', ()=> prevTrack());
+
+function nextTrack(){
+  // if playlist contains current track, find and advance, else use songs array position
+  if(playlist.length>0){
+    // find current index in playlist by comparing title/url
+    // simple cyclic next
+    currentIndex = (currentIndex + 1) % playlist.length;
+    playTrackFromPlaylist(currentIndex);
+  } else {
+    // if songs loaded, move to next
+    // find current video id
+    try{
+      const curId = ytPlayerMain.getVideoData().video_id;
+      const idx = songs.findIndex(s=> s.id.videoId === curId);
+      if(idx>=0 && idx < songs.length-1) playTrackByIndex(idx+1);
+    }catch(e){}
+  }
+}
+function prevTrack(){
+  if(playlist.length>0){
+    currentIndex = (currentIndex - 1 + playlist.length)%playlist.length;
+    playTrackFromPlaylist(currentIndex);
+  } else {
+    try{
+      const curId = ytPlayerMain.getVideoData().video_id;
+      const idx = songs.findIndex(s=> s.id.videoId === curId);
+      if(idx>0) playTrackByIndex(idx-1);
+    }catch(e){}
+  }
+}
+
+/* ---------- search handlers: suggestions + enter for full results ---------- */
+let suggestionTimer = null;
+TOP_SEARCH.addEventListener('input', async (e)=>{
+  const q = TOP_SEARCH.value.trim();
+  SUGGEST_BOX.innerHTML = '';
+  if(!q){ SUGGEST_BOX.style.display='none'; return; }
+  // throttle
+  if(suggestionTimer) clearTimeout(suggestionTimer);
+  suggestionTimer = setTimeout(async ()=>{
+    const res = await ytSearch(q);
+    const slice = res.slice(0,6);
+    slice.forEach(item=>{
+      const div = document.createElement('div');
+      div.innerText = item.snippet.title;
+      div.addEventListener('click', ()=>{
+        TOP_SEARCH.value = item.snippet.title;
+        SUGGEST_BOX.style.display = 'none';
+        // load full results for that suggestion
+        loadFullResults(item.snippet.title);
+      });
+      SUGGEST_BOX.appendChild(div);
+    });
+    if(slice.length>0) SUGGEST_BOX.style.display = 'block';
+    else SUGGEST_BOX.style.display = 'none';
+  },220);
+});
+TOP_SEARCH.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ SUGGEST_BOX.style.display='none'; loadFullResults(TOP_SEARCH.value.trim()); } });
+
+MAIN_SEARCH.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ loadFullResults(MAIN_SEARCH.value.trim()); } });
+
+async function loadFullResults(q){
+  if(!q) return;
+  const data = await ytSearch(q);
+  if(!data || !data.length){ RESULTS_CONTAINER.innerHTML = '<div style="color:#aaa">Sonuç bulunamadı</div>'; return; }
+  renderResults(data);
+}
+
+/* ---------- Clicking outside suggestion box hides it ---------- */
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.search-inline') && !e.target.closest('#suggestBox')) SUGGEST_BOX.style.display='none';
+});
+
+/* ---------- initial demo search ---------- */
+(async ()=>{
+  const demo = await ytSearch('pop music');
+  renderResults(demo.slice(0,12));
+})();
 </script>
-
 </body>
 </html>
