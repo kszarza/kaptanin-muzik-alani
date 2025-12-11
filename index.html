@@ -317,16 +317,14 @@ body {
 /* ============================
    PART 2 - YOUTUBE + PLAYER
    ============================
-   Paste this under PART 1 (where indicated).
-   Replace YOUR_API_KEY with your actual key.
 */
 
 /* -------- CONFIG ---------- */
-const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY"; // ← buraya koy
+const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
 const MAX_RESULTS = 20;
-const PREVIEW_SECONDS = 7; // preview uzunluğu
-const PREVIEW_MIN_START = 5; // preview başlama için minimum saniye
-const PREVIEW_MAX_START = 40; // preview için rastgele aralık sonu
+const PREVIEW_SECONDS = 7;
+const PREVIEW_MIN_START = 5;
+const PREVIEW_MAX_START = 40;
 
 /* -------- DOM refs --------- */
 const resultsEl = document.getElementById("results");
@@ -342,12 +340,12 @@ const progressFill = document.getElementById("progressFill");
 const playerBar = document.getElementById("playerBar");
 
 /* -------- state ---------- */
-let ytPlayerMain = null;     // main YT player (hidden)
-let previewPlayer = null;    // preview YT player instance
-let previewHost = null;      // DOM node for preview
-let searchResults = [];      // current search results (API response)
-let playlist = [];           // queue (objects: {videoId,title,thumb,channel})
-let currentIndex = -1;       // index in searchResults if playing from results
+let ytPlayerMain = null;
+let previewPlayer = null;
+let previewHost = null;
+let searchResults = [];
+let playlist = [];
+let currentIndex = -1;
 let isPlaying = false;
 let progressTimer = null;
 
@@ -356,19 +354,18 @@ function formatTime(seconds) {
   seconds = Math.max(0, Math.floor(seconds || 0));
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2,"0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 /* ---------- YT IFRAME API READY ---------- */
-/* We'll create a hidden div for the main YT player to avoid iframe origin problems. */
 function onYouTubeIframeAPIReady() {
-  // create a host for main player
   const host = document.createElement("div");
   host.id = "yt-main-host";
   host.style.width = "0";
   host.style.height = "0";
   host.style.position = "absolute";
   host.style.left = "-9999px";
+  host.style.pointerEvents = "none"; // ← tıklama engellendi
   document.body.appendChild(host);
 
   ytPlayerMain = new YT.Player(host, {
@@ -382,11 +379,12 @@ function onYouTubeIframeAPIReady() {
       rel: 0,
       playsinline: 1,
       disablekb: 1,
-      fs: 0
+      fs: 0,
+      origin: window.location.origin // postMessage hatası fix
     },
     events: {
       onStateChange: onMainStateChange,
-      onReady: () => { /* ready */ }
+      onReady: () => {}
     }
   });
 }
@@ -395,38 +393,40 @@ function onYouTubeIframeAPIReady() {
 function onMainStateChange(e) {
   if (!ytPlayerMain) return;
   const state = e.data;
-  const eq = document.getElementById("eqAnim");
   if (state === YT.PlayerState.PLAYING) {
     isPlaying = true;
     playBtn.innerText = "⏸";
-    if (eq) eq.style.display = "inline-flex";
     startProgressTicker();
   } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.BUFFERING) {
     isPlaying = false;
     playBtn.innerText = "▶";
-    if (eq) eq.style.display = "none";
     stopProgressTicker();
   } else if (state === YT.PlayerState.ENDED) {
-    // track ended -> autoplay next
     nextTrack();
   }
 }
 
 /* ---------- PROGRESS TICKER ---------- */
-function startProgressTicker(){
+function startProgressTicker() {
   stopProgressTicker();
-  progressTimer = setInterval(()=>{
+  progressTimer = setInterval(() => {
     try {
       const cur = ytPlayerMain.getCurrentTime();
       const dur = ytPlayerMain.getDuration() || 0;
-      const pct = dur ? Math.min(100, (cur/dur)*100) : 0;
+      const pct = dur ? Math.min(100, (cur / dur) * 100) : 0;
       progressFill.style.width = pct + "%";
-    } catch(e){}
+    } catch (e) {}
   }, 350);
 }
-function stopProgressTicker(){ if(progressTimer){ clearInterval(progressTimer); progressTimer=null; }}
 
-/* ---------- YOUTUBE SEARCH (Data API v3) ---------- */
+function stopProgressTicker() {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+}
+
+/* ---------- YOUTUBE SEARCH ---------- */
 async function ytSearch(q) {
   if (!q) return [];
   const endpoint = "https://www.googleapis.com/youtube/v3/search";
@@ -438,16 +438,13 @@ async function ytSearch(q) {
     key: API_KEY,
     videoCategoryId: "10"
   });
+
   try {
     const res = await fetch(`${endpoint}?${params.toString()}`);
-    if (!res.ok) {
-      console.error("YT search failed:", res.status);
-      return [];
-    }
+    if (!res.ok) return [];
     const j = await res.json();
     return j.items || [];
   } catch (err) {
-    console.error("YT search error", err);
     return [];
   }
 }
@@ -456,37 +453,42 @@ async function ytSearch(q) {
 function renderResults(items) {
   searchResults = items;
   resultsEl.innerHTML = "";
+
   items.forEach((it, idx) => {
     const vid = it.id.videoId;
     const title = it.snippet.title;
     const ch = it.snippet.channelTitle;
-    const thumb = (it.snippet.thumbnails && (it.snippet.thumbnails.medium?.url || it.snippet.thumbnails.default?.url)) || "";
+    const thumb =
+      it.snippet.thumbnails?.medium?.url ||
+      it.snippet.thumbnails?.default?.url ||
+      "";
 
     const card = document.createElement("div");
     card.className = "result-item";
     card.dataset.index = idx;
+    card.style.position = "relative";
+    card.style.overflow = "hidden"; // siyah katman fix
+
     card.innerHTML = `
-      <img src="${thumb}" alt="thumb">
+      <img src="${thumb}" alt="">
       <div style="flex:1">
         <div class="result-title">${title}</div>
         <div class="channel">${ch}</div>
       </div>
-      <button title="Ekle" class="plusBtn" style="background:#1DB954;border:none;padding:8px;border-radius:8px;margin-left:8px;cursor:pointer">+</button>
+      <button class="plusBtn" style="background:#1DB954;border:none;padding:8px;border-radius:8px;margin-left:8px;cursor:pointer">+</button>
     `;
 
-    // hover preview
-    card.addEventListener("mouseenter", (e) => {
-      startPreview(vid, card);
-    });
+    // Hover Preview
+    card.addEventListener("mouseenter", () => startPreview(vid, card));
     card.addEventListener("mouseleave", stopPreview);
 
-    // click -> play
+    // Play if clicked
     card.addEventListener("click", (e) => {
-      if (e.target && e.target.closest(".plusBtn")) return; // skip if clicked plus
+      if (e.target.closest(".plusBtn")) return;
       playFromResults(idx);
     });
 
-    // plus button -> add to playlist
+    // Playlist add
     const plus = card.querySelector(".plusBtn");
     plus.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -497,67 +499,63 @@ function renderResults(items) {
   });
 }
 
-/* ---------- PREVIEW (single ephemeral player) ---------- */
+/* ---------- PREVIEW ---------- */
 function startPreview(videoId, cardElement) {
-  stopPreview(); // ensure only one preview
+  stopPreview();
   previewHost = document.createElement("div");
   previewHost.style.position = "absolute";
-  previewHost.style.left = "8px";
-  previewHost.style.top = "8px";
-  previewHost.style.width = "calc(100% - 16px)";
-  previewHost.style.height = "112px";
+  previewHost.style.left = "0";
+  previewHost.style.top = "0";
+  previewHost.style.width = "100%";
+  previewHost.style.height = "100%";
   previewHost.style.borderRadius = "8px";
   previewHost.style.overflow = "hidden";
-  previewHost.style.zIndex = 30;
-  previewHost.style.background = "#000";
-  // ensure cardElement position is relative
-  cardElement.style.position = "relative";
-  cardElement.appendChild(previewHost);
+  previewHost.style.zIndex = "5";
+  previewHost.style.pointerEvents = "none"; // tıklama engellendi
 
-  // preview container
   const previewDiv = document.createElement("div");
-  previewDiv.id = "preview-" + Date.now();
   previewDiv.style.width = "100%";
   previewDiv.style.height = "100%";
+  previewDiv.id = "preview-" + Date.now();
   previewHost.appendChild(previewDiv);
+  cardElement.appendChild(previewHost);
 
-  // random start sec
-  const start = Math.floor(Math.random() * Math.max(1, PREVIEW_MAX_START - PREVIEW_MIN_START)) + PREVIEW_MIN_START;
+  const start = Math.floor(Math.random() * (PREVIEW_MAX_START - PREVIEW_MIN_START)) + PREVIEW_MIN_START;
   const end = start + PREVIEW_SECONDS;
 
-  // create preview YT player
-  try {
-    previewPlayer = new YT.Player(previewDiv, {
-      height: "100%",
-      width: "100%",
-      videoId: videoId,
-      playerVars: {
-        autoplay: 1,
-        controls: 0,
-        start,
-        end,
-        mute: 1,
-        modestbranding: 1,
-        playsinline: 1,
-        rel: 0
-      },
-      events: {
-        onReady: (e) => { try{ e.target.playVideo(); }catch(e){} },
-        onStateChange: (s) => {
-          if (s.data === YT.PlayerState.ENDED) {
-            try { previewPlayer.seekTo(start); previewPlayer.playVideo(); } catch(e){}
-          }
-        }
-      }
-    });
-  } catch(e) {
-    console.error("preview create failed", e);
-  }
+  previewPlayer = new YT.Player(previewDiv, {
+    height: "100%",
+    width: "100%",
+    videoId: videoId,
+    playerVars: {
+      autoplay: 1,
+      controls: 0,
+      start,
+      end,
+      mute: 1,
+      modestbranding: 1,
+      playsinline: 1,
+      rel: 0,
+      origin: window.location.origin
+    },
+    events: {
+      onReady: (e) => e.target.playVideo()
+    }
+  });
 }
+
 function stopPreview() {
-  try { if (previewPlayer && previewPlayer.destroy) previewPlayer.destroy(); } catch(e){}
+  try {
+    if (previewPlayer) previewPlayer.destroy();
+  } catch (e) {}
+
   previewPlayer = null;
-  try { if (previewHost && previewHost.parentNode) previewHost.parentNode.removeChild(previewHost); } catch(e){}
+
+  try {
+    if (previewHost && previewHost.parentNode)
+      previewHost.parentNode.removeChild(previewHost);
+  } catch (e) {}
+
   previewHost = null;
 }
 
@@ -566,28 +564,33 @@ function addToPlaylist(item) {
   playlist.push(item);
   renderPlaylist();
 }
-function renderPlaylist(){
+
+function renderPlaylist() {
   playlistEl.innerHTML = "";
   playlist.forEach((p, i) => {
     const el = document.createElement("div");
     el.className = "playlistItem";
     el.innerHTML = `<img src="${p.thumb}"><div class="playlistMeta">${p.title}</div>`;
-    el.addEventListener("click", ()=> { playFromPlaylist(i); });
+    el.addEventListener("click", () => playFromPlaylist(i));
     playlistEl.appendChild(el);
   });
 }
 
-/* ---------- PLAY HANDLERS ---------- */
+/* ---------- PLAY ---------- */
 function playFromResults(idx) {
   const it = searchResults[idx];
   if (!it) return;
+
   const obj = {
     videoId: it.id.videoId,
     title: it.snippet.title,
-    thumb: (it.snippet.thumbnails && (it.snippet.thumbnails.medium?.url || it.snippet.thumbnails.default?.url)) || '',
+    thumb:
+      it.snippet.thumbnails?.medium?.url ||
+      it.snippet.thumbnails?.default?.url ||
+      "",
     channel: it.snippet.channelTitle
   };
-  // set currentIndex relative to search results
+
   currentIndex = idx;
   startMainPlayback(obj);
 }
@@ -595,65 +598,51 @@ function playFromResults(idx) {
 function playFromPlaylist(idx) {
   const p = playlist[idx];
   if (!p) return;
-  // when playing from playlist, currentIndex = -1 (not in searchResults)
+
   currentIndex = -1;
   startMainPlayback(p);
 }
 
-/* ---------- START MAIN PLAYBACK ---------- */
 function startMainPlayback(item) {
-  // show bar
   playerBar.style.display = "flex";
+
   playerThumb.src = item.thumb || "";
   playerTitle.innerText = item.title || "";
   playerAuthor.innerText = item.channel || "";
 
-  // load into hidden main player
-  if (ytPlayerMain && ytPlayerMain.loadVideoById) {
+  try {
+    ytPlayerMain.loadVideoById({ videoId: item.videoId, startSeconds: 0 });
+    ytPlayerMain.playVideo();
+  } catch (err) {
     try {
-      ytPlayerMain.loadVideoById({ videoId: item.videoId, startSeconds: 0 });
+      ytPlayerMain.loadVideoById(item.videoId);
       ytPlayerMain.playVideo();
-    } catch (err) {
-      // sometimes loadVideoById expects string
-      try { ytPlayerMain.loadVideoById(item.videoId); ytPlayerMain.playVideo(); } catch(e){ console.error(e); }
-    }
-  } else {
-    // fallback retry
-    setTimeout(()=> startMainPlayback(item), 300);
+    } catch (e) {}
   }
 }
 
 /* ---------- CONTROLS ---------- */
-playBtn.addEventListener("click", ()=> {
-  if (!ytPlayerMain) return;
+playBtn.addEventListener("click", () => {
   const st = ytPlayerMain.getPlayerState();
   if (st === YT.PlayerState.PLAYING) ytPlayerMain.pauseVideo();
   else ytPlayerMain.playVideo();
 });
+
 nextBtn.addEventListener("click", nextTrack);
 prevBtn.addEventListener("click", prevTrack);
 
-function nextTrack(){
+function nextTrack() {
   if (playlist.length > 0) {
-    // if playing from playlist, advance
-    if (currentIndex === -1) {
-      // find currently playing index in playlist
-      // We'll keep a pointer: currentIndexPlaylist stored in playlistPlayIndex
-      if (typeof playlistPlayIndex === "undefined") playlistPlayIndex = 0;
-      playlistPlayIndex = (playlistPlayIndex + 1) % playlist.length;
-      playFromPlaylist(playlistPlayIndex);
-    } else {
-      // playing from results -> go to next result
-      if (currentIndex < searchResults.length - 1) playFromResults(currentIndex + 1);
-    }
+    if (typeof playlistPlayIndex === "undefined") playlistPlayIndex = 0;
+    playlistPlayIndex = (playlistPlayIndex + 1) % playlist.length;
+    playFromPlaylist(playlistPlayIndex);
   } else {
-    // no playlist -> just move within results
-    if (currentIndex >= 0 && currentIndex < searchResults.length - 1) {
+    if (currentIndex < searchResults.length - 1)
       playFromResults(currentIndex + 1);
-    }
   }
 }
-function prevTrack(){
+
+function prevTrack() {
   if (playlist.length > 0) {
     if (typeof playlistPlayIndex === "undefined") playlistPlayIndex = 0;
     playlistPlayIndex = (playlistPlayIndex - 1 + playlist.length) % playlist.length;
@@ -663,46 +652,19 @@ function prevTrack(){
   }
 }
 
-/* ---------- SEARCH HANDLERS (throttled suggestions) ---------- */
+/* ---------- SEARCH ---------- */
 let suggestionTimeout = null;
-searchInput.addEventListener("input", (e) => {
+searchInput.addEventListener("input", () => {
   const q = searchInput.value.trim();
   if (suggestionTimeout) clearTimeout(suggestionTimeout);
+
   suggestionTimeout = setTimeout(async () => {
-    if (!q) { resultsEl.innerHTML = ""; return; }
+    if (!q) {
+      resultsEl.innerHTML = "";
+      return;
+    }
+
     const data = await ytSearch(q);
-    // show top 8 as immediate results
     renderResults(data.slice(0, 8));
   }, 260);
 });
-searchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    const q = searchInput.value.trim();
-    if (!q) return;
-    // load more results and render (full)
-    (async ()=> {
-      const data = await ytSearch(q);
-      renderResults(data);
-    })();
-  }
-});
-
-/* ---------- Clicking outside preview hides suggestion box (if any) ---------- */
-document.addEventListener("click", (e)=>{
-  // nothing special here in PART2, handled by cards
-});
-
-/* ---------- INITIAL DEMO POPULATE ---------- */
-(async function init(){
-  // small warm search to populate UI
-  const demo = await ytSearch("pop music");
-  renderResults(demo.slice(0,12));
-})();
-
-/* ---------- CLEANUP on unload ---------- */
-window.addEventListener("unload", () => {
-  try { if (ytPlayerMain && ytPlayerMain.destroy) ytPlayerMain.destroy(); } catch(e){}
-  try { if (previewPlayer && previewPlayer.destroy) previewPlayer.destroy(); } catch(e){}
-});
-
-</script>
