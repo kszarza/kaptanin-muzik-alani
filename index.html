@@ -313,358 +313,215 @@ body {
 
 </body>
 </html>
+
 <script>
-/* ============================
-   PART 2 - YOUTUBE + PLAYER
-   ============================
-*/
-
-/* -------- CONFIG ---------- */
+// ==================== CONFIG =====================
 const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
-const MAX_RESULTS = 20;
-const PREVIEW_SECONDS = 7;
-const PREVIEW_MIN_START = 5;
-const PREVIEW_MAX_START = 40;
+const MAX_RESULTS = 15;
 
-/* -------- DOM refs --------- */
+// ==================== DOM ========================
 const resultsEl = document.getElementById("results");
 const playlistEl = document.getElementById("playlist");
 const searchInput = document.getElementById("searchInput");
+
 const playerThumb = document.getElementById("playerThumb");
 const playerTitle = document.getElementById("playerTitle");
 const playerAuthor = document.getElementById("playerAuthor");
 const playBtn = document.getElementById("playBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
-const progressFill = document.getElementById("progressFill");
-const playerBar = document.getElementById("playerBar");
 
-/* -------- state ---------- */
-let ytPlayerMain = null;
-let previewPlayer = null;
-let previewHost = null;
+// ==================== STATE ========================
 let searchResults = [];
 let playlist = [];
 let currentIndex = -1;
+let ytPlayer = null;
 let isPlaying = false;
-let progressTimer = null;
 
-/* ---------- UTILS ---------- */
-function formatTime(seconds) {
-  seconds = Math.max(0, Math.floor(seconds || 0));
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+// ==================== LOAD YT LIB ====================
+let tag = document.createElement("script");
+tag.src = "https://www.youtube.com/iframe_api";
+document.body.appendChild(tag);
 
-/* ---------- YT IFRAME API READY ---------- */
+// YT Hazır olunca player kuruluyor
 function onYouTubeIframeAPIReady() {
-  const host = document.createElement("div");
-  host.id = "yt-main-host";
-  host.style.width = "0";
-  host.style.height = "0";
-  host.style.position = "absolute";
-  host.style.left = "-9999px";
-  host.style.pointerEvents = "none"; // ← tıklama engellendi
-  document.body.appendChild(host);
+    ytPlayer = new YT.Player("yt-player", {
+        height: "0",
+        width: "0",
+        videoId: "",
+        playerVars: {
+            autoplay: 0,
+            controls: 0,
+            modestbranding: 1,
+            rel: 0,
+            fs: 0,
+            disablekb: 1,
+            playsinline: 1,
+            origin: window.location.origin
+        },
+        events: {
+            onStateChange: playerState
+        }
+    });
+}
 
-  ytPlayerMain = new YT.Player(host, {
-    height: "0",
-    width: "0",
-    videoId: "",
-    playerVars: {
-      autoplay: 0,
-      controls: 0,
-      modestbranding: 1,
-      rel: 0,
-      playsinline: 1,
-      disablekb: 1,
-      fs: 0,
-      origin: window.location.origin // postMessage hatası fix
-    },
-    events: {
-      onStateChange: onMainStateChange,
-      onReady: () => {}
+function playerState(e) {
+    if (e.data === YT.PlayerState.PLAYING) {
+        isPlaying = true;
+        playBtn.innerText = "⏸";
     }
-  });
+    if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
+        isPlaying = false;
+        playBtn.innerText = "▶";
+    }
+    if (e.data === YT.PlayerState.ENDED) {
+        nextTrack();
+    }
 }
 
-/* ---------- MAIN PLAYER STATE HANDLER ---------- */
-function onMainStateChange(e) {
-  if (!ytPlayerMain) return;
-  const state = e.data;
-  if (state === YT.PlayerState.PLAYING) {
-    isPlaying = true;
-    playBtn.innerText = "⏸";
-    startProgressTicker();
-  } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.BUFFERING) {
-    isPlaying = false;
-    playBtn.innerText = "▶";
-    stopProgressTicker();
-  } else if (state === YT.PlayerState.ENDED) {
-    nextTrack();
-  }
+// ==================== SEARCH ============================
+async function searchYouTube(query) {
+    if (!query) return [];
+
+    let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=${MAX_RESULTS}&key=${API_KEY}&q=${encodeURIComponent(query)}`;
+
+    let res = await fetch(url);
+    let data = await res.json();
+    return data.items || [];
 }
 
-/* ---------- PROGRESS TICKER ---------- */
-function startProgressTicker() {
-  stopProgressTicker();
-  progressTimer = setInterval(() => {
-    try {
-      const cur = ytPlayerMain.getCurrentTime();
-      const dur = ytPlayerMain.getDuration() || 0;
-      const pct = dur ? Math.min(100, (cur / dur) * 100) : 0;
-      progressFill.style.width = pct + "%";
-    } catch (e) {}
-  }, 350);
-}
-
-function stopProgressTicker() {
-  if (progressTimer) {
-    clearInterval(progressTimer);
-    progressTimer = null;
-  }
-}
-
-/* ---------- YOUTUBE SEARCH ---------- */
-async function ytSearch(q) {
-  if (!q) return [];
-  const endpoint = "https://www.googleapis.com/youtube/v3/search";
-  const params = new URLSearchParams({
-    part: "snippet",
-    q,
-    type: "video",
-    maxResults: String(MAX_RESULTS),
-    key: API_KEY,
-    videoCategoryId: "10"
-  });
-
-  try {
-    const res = await fetch(`${endpoint}?${params.toString()}`);
-    if (!res.ok) return [];
-    const j = await res.json();
-    return j.items || [];
-  } catch (err) {
-    return [];
-  }
-}
-
-/* ---------- RENDER RESULTS ---------- */
+// ==================== RENDER RESULTS =====================
 function renderResults(items) {
-  searchResults = items;
-  resultsEl.innerHTML = "";
+    resultsEl.innerHTML = "";
+    searchResults = items;
 
-  items.forEach((it, idx) => {
-    const vid = it.id.videoId;
-    const title = it.snippet.title;
-    const ch = it.snippet.channelTitle;
-    const thumb =
-      it.snippet.thumbnails?.medium?.url ||
-      it.snippet.thumbnails?.default?.url ||
-      "";
+    items.forEach((item, i) => {
+        let vid = item.id.videoId;
+        let title = item.snippet.title;
+        let channel = item.snippet.channelTitle;
+        let thumb = item.snippet.thumbnails.medium.url;
 
-    const card = document.createElement("div");
-    card.className = "result-item";
-    card.dataset.index = idx;
-    card.style.position = "relative";
-    card.style.overflow = "hidden"; // siyah katman fix
+        let div = document.createElement("div");
+        div.className = "result-item";
+        div.dataset.index = i;
 
-    card.innerHTML = `
-      <img src="${thumb}" alt="">
-      <div style="flex:1">
-        <div class="result-title">${title}</div>
-        <div class="channel">${ch}</div>
-      </div>
-      <button class="plusBtn" style="background:#1DB954;border:none;padding:8px;border-radius:8px;margin-left:8px;cursor:pointer">+</button>
-    `;
+        div.innerHTML = `
+            <img src="${thumb}">
+            <div>
+                <div class="result-title">${title}</div>
+                <div class="channel">${channel}</div>
+            </div>
+            <button class="addBtn" style="background:#1DB954;border:none;padding:8px;border-radius:8px;cursor:pointer">+</button>
+        `;
 
-    // Hover Preview
-    card.addEventListener("mouseenter", () => startPreview(vid, card));
-    card.addEventListener("mouseleave", stopPreview);
+        // Şarkıya tıklayınca oynat
+        div.addEventListener("click", e => {
+            if (e.target.classList.contains("addBtn")) return; // + tuşu
+            playFromResults(i);
+        });
 
-    // Play if clicked
-    card.addEventListener("click", (e) => {
-      if (e.target.closest(".plusBtn")) return;
-      playFromResults(idx);
+        // + tıklayınca playlist'e ekle
+        div.querySelector(".addBtn").addEventListener("click", e => {
+            e.stopPropagation();
+            addToPlaylist({
+                videoId: vid,
+                title,
+                thumb,
+                channel
+            });
+        });
+
+        resultsEl.appendChild(div);
     });
-
-    // Playlist add
-    const plus = card.querySelector(".plusBtn");
-    plus.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      addToPlaylist({ videoId: vid, title, thumb, channel: ch });
-    });
-
-    resultsEl.appendChild(card);
-  });
 }
 
-/* ---------- PREVIEW ---------- */
-function startPreview(videoId, cardElement) {
-  stopPreview();
-  previewHost = document.createElement("div");
-  previewHost.style.position = "absolute";
-  previewHost.style.left = "0";
-  previewHost.style.top = "0";
-  previewHost.style.width = "100%";
-  previewHost.style.height = "100%";
-  previewHost.style.borderRadius = "8px";
-  previewHost.style.overflow = "hidden";
-  previewHost.style.zIndex = "5";
-  previewHost.style.pointerEvents = "none"; // tıklama engellendi
-
-  const previewDiv = document.createElement("div");
-  previewDiv.style.width = "100%";
-  previewDiv.style.height = "100%";
-  previewDiv.id = "preview-" + Date.now();
-  previewHost.appendChild(previewDiv);
-  cardElement.appendChild(previewHost);
-
-  const start = Math.floor(Math.random() * (PREVIEW_MAX_START - PREVIEW_MIN_START)) + PREVIEW_MIN_START;
-  const end = start + PREVIEW_SECONDS;
-
-  previewPlayer = new YT.Player(previewDiv, {
-    height: "100%",
-    width: "100%",
-    videoId: videoId,
-    playerVars: {
-      autoplay: 1,
-      controls: 0,
-      start,
-      end,
-      mute: 1,
-      modestbranding: 1,
-      playsinline: 1,
-      rel: 0,
-      origin: window.location.origin
-    },
-    events: {
-      onReady: (e) => e.target.playVideo()
+// ==================== SEARCH INPUT =======================
+searchInput.addEventListener("input", async () => {
+    let q = searchInput.value.trim();
+    if (q.length === 0) {
+        resultsEl.innerHTML = "";
+        return;
     }
-  });
-}
 
-function stopPreview() {
-  try {
-    if (previewPlayer) previewPlayer.destroy();
-  } catch (e) {}
+    let items = await searchYouTube(q);
+    renderResults(items);
+});
 
-  previewPlayer = null;
-
-  try {
-    if (previewHost && previewHost.parentNode)
-      previewHost.parentNode.removeChild(previewHost);
-  } catch (e) {}
-
-  previewHost = null;
-}
-
-/* ---------- PLAYLIST ---------- */
-function addToPlaylist(item) {
-  playlist.push(item);
-  renderPlaylist();
+// ==================== PLAYLIST ===========================
+function addToPlaylist(obj) {
+    playlist.push(obj);
+    renderPlaylist();
 }
 
 function renderPlaylist() {
-  playlistEl.innerHTML = "";
-  playlist.forEach((p, i) => {
-    const el = document.createElement("div");
-    el.className = "playlistItem";
-    el.innerHTML = `<img src="${p.thumb}"><div class="playlistMeta">${p.title}</div>`;
-    el.addEventListener("click", () => playFromPlaylist(i));
-    playlistEl.appendChild(el);
-  });
+    playlistEl.innerHTML = "";
+
+    playlist.forEach((song, i) => {
+        let d = document.createElement("div");
+        d.className = "song-item";
+        d.dataset.index = i;
+
+        d.innerHTML = `
+            <img src="${song.thumb}">
+            <div class="song-info">
+                <div class="title">${song.title}</div>
+                <div class="author">${song.channel}</div>
+            </div>
+        `;
+
+        d.addEventListener("click", () => playTrack(i));
+        playlistEl.appendChild(d);
+    });
 }
 
-/* ---------- PLAY ---------- */
-function playFromResults(idx) {
-  const it = searchResults[idx];
-  if (!it) return;
+// ==================== PLAYER ==============================
+function playTrack(i) {
+    currentIndex = i;
+    let s = playlist[i];
 
-  const obj = {
-    videoId: it.id.videoId,
-    title: it.snippet.title,
-    thumb:
-      it.snippet.thumbnails?.medium?.url ||
-      it.snippet.thumbnails?.default?.url ||
-      "",
-    channel: it.snippet.channelTitle
-  };
+    playerThumb.src = s.thumb;
+    playerTitle.innerText = s.title;
+    playerAuthor.innerText = s.channel;
 
-  currentIndex = idx;
-  startMainPlayback(obj);
+    ytPlayer.loadVideoById(s.videoId);
+    ytPlayer.playVideo();
+
+    isPlaying = true;
+    playBtn.innerText = "⏸";
 }
 
-function playFromPlaylist(idx) {
-  const p = playlist[idx];
-  if (!p) return;
+function playFromResults(i) {
+    let r = searchResults[i];
+    addToPlaylist({
+        videoId: r.id.videoId,
+        title: r.snippet.title,
+        thumb: r.snippet.thumbnails.medium.url,
+        channel: r.snippet.channelTitle
+    });
 
-  currentIndex = -1;
-  startMainPlayback(p);
+    playTrack(playlist.length - 1);
 }
 
-function startMainPlayback(item) {
-  playerBar.style.display = "flex";
-
-  playerThumb.src = item.thumb || "";
-  playerTitle.innerText = item.title || "";
-  playerAuthor.innerText = item.channel || "";
-
-  try {
-    ytPlayerMain.loadVideoById({ videoId: item.videoId, startSeconds: 0 });
-    ytPlayerMain.playVideo();
-  } catch (err) {
-    try {
-      ytPlayerMain.loadVideoById(item.videoId);
-      ytPlayerMain.playVideo();
-    } catch (e) {}
-  }
-}
-
-/* ---------- CONTROLS ---------- */
+// ==================== CONTROLS ===========================
 playBtn.addEventListener("click", () => {
-  const st = ytPlayerMain.getPlayerState();
-  if (st === YT.PlayerState.PLAYING) ytPlayerMain.pauseVideo();
-  else ytPlayerMain.playVideo();
+    if (!ytPlayer) return;
+    if (isPlaying) {
+        ytPlayer.pauseVideo();
+        playBtn.innerText = "▶";
+    } else {
+        ytPlayer.playVideo();
+        playBtn.innerText = "⏸";
+    }
 });
 
-nextBtn.addEventListener("click", nextTrack);
 prevBtn.addEventListener("click", prevTrack);
-
-function nextTrack() {
-  if (playlist.length > 0) {
-    if (typeof playlistPlayIndex === "undefined") playlistPlayIndex = 0;
-    playlistPlayIndex = (playlistPlayIndex + 1) % playlist.length;
-    playFromPlaylist(playlistPlayIndex);
-  } else {
-    if (currentIndex < searchResults.length - 1)
-      playFromResults(currentIndex + 1);
-  }
-}
+nextBtn.addEventListener("click", nextTrack);
 
 function prevTrack() {
-  if (playlist.length > 0) {
-    if (typeof playlistPlayIndex === "undefined") playlistPlayIndex = 0;
-    playlistPlayIndex = (playlistPlayIndex - 1 + playlist.length) % playlist.length;
-    playFromPlaylist(playlistPlayIndex);
-  } else {
-    if (currentIndex > 0) playFromResults(currentIndex - 1);
-  }
+    if (currentIndex > 0) playTrack(currentIndex - 1);
 }
 
-/* ---------- SEARCH ---------- */
-let suggestionTimeout = null;
-searchInput.addEventListener("input", () => {
-  const q = searchInput.value.trim();
-  if (suggestionTimeout) clearTimeout(suggestionTimeout);
-
-  suggestionTimeout = setTimeout(async () => {
-    if (!q) {
-      resultsEl.innerHTML = "";
-      return;
-    }
-
-    const data = await ytSearch(q);
-    renderResults(data.slice(0, 8));
-  }, 260);
-});
+function nextTrack() {
+    if (currentIndex < playlist.length - 1) playTrack(currentIndex + 1);
+}
+</script>
