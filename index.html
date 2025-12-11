@@ -581,4 +581,60 @@ searchInput.addEventListener("input", () => {
 nextBtn.addEventListener("click", nextTrack);
 prevBtn.addEventListener("click", prevTrack);
 
+<script>
+// ===========================
+//   GLOBAL PLAYER
+// ===========================
+let ytPlayerMain;
+
+// YouTube API hazır olduğunda çalışacak
+function onYouTubeIframeAPIReady() {
+    ytPlayerMain = new YT.Player("yt-player-main", {
+        height: "0",
+        width: "0",
+        playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0
+        },
+        events: {
+            onReady: () => console.log("YT Player Hazır!")
+        }
+    });
+}
+
+// ===========================
+//   SONUÇTAN TIKLAYIP OYNATMA
+// ===========================
+function playFromResults(videoId, title, thumb) {
+    if (!ytPlayerMain || typeof ytPlayerMain.loadVideoById !== "function") {
+        console.error("YT Player hazır değil!");
+        return;
+    }
+
+    ytPlayerMain.loadVideoById(videoId);
+    ytPlayerMain.playVideo();
+
+    document.getElementById("current-title").innerText = title;
+    document.getElementById("current-thumb").src = thumb;
+    document.getElementById("player-area").style.display = "flex";
+}
+
+// ===========================
+//   PLAY/PAUSE BUTONLARI
+// ===========================
+document.getElementById("play-btn").addEventListener("click", () => {
+    if (ytPlayerMain && ytPlayerMain.playVideo) ytPlayerMain.playVideo();
+});
+
+document.getElementById("pause-btn").addEventListener("click", () => {
+    if (ytPlayerMain && ytPlayerMain.pauseVideo) ytPlayerMain.pauseVideo();
+});
 </script>
+
+<!-- YOUTUBE API KODU EN SONDA OLACAK -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
