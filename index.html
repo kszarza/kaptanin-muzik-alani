@@ -3,195 +3,336 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kaptan Müzik Alanı</title>
+<title>Kaptanify</title>
 
 <style>
     body {
         margin: 0;
-        font-family: Poppins, sans-serif;
-        background: linear-gradient(135deg, #0a0a0a, #1c1c1c);
-        display: flex;
-        height: 100vh;
+        background: #000;
+        font-family: Arial, sans-serif;
         color: white;
     }
 
-    .sidebar {
-        width: 300px;
-        background: rgba(255,255,255,0.05);
-        backdrop-filter: blur(10px);
-        padding: 20px;
-        overflow-y: auto;
-    }
-
-    .main {
-        flex: 1;
+    /* NAVBAR */
+    .navbar {
+        width: 100%;
+        height: 70px;
+        background: #111;
         display: flex;
-        flex-direction: column;
-        padding: 30px;
-        backdrop-filter: blur(6px);
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #222;
     }
 
-    h2 {
-        margin-top: 0;
-        font-size: 26px;
-        background: linear-gradient(90deg, #ff4d4d, #ffcc00);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+    .nav-left {
+        font-size: 24px;
+        font-weight: bold;
+        color: #bb44ff;
     }
 
-    .searchBox {
+    .nav-center {
         display: flex;
-        margin-bottom: 10px;
+        gap: 25px;
+        font-size: 17px;
     }
 
-    .searchBox input {
-        flex: 1;
-        padding: 10px;
-        border-radius: 10px;
+    .nav-center div {
+        cursor: pointer;
+    }
+
+    .nav-right input {
+        padding: 10px 20px;
+        width: 250px;
+        border-radius: 30px;
         border: none;
+        outline: none;
+    }
+
+    /* HERO */
+    .hero {
+        width: 100%;
+        padding: 100px 20px;
+        text-align: center;
+        background: linear-gradient(180deg, #3a005f 0%, #000 100%);
+    }
+
+    .hero h1 {
+        font-size: 55px;
+        font-weight: 900;
+    }
+
+    .purple {
+        color: #bb44ff;
+    }
+
+    .hero p {
+        margin-top: 10px;
+        color: #cccccc;
+    }
+
+    .hero input {
+        margin-top: 30px;
+        padding: 15px 25px;
+        width: 400px;
+        border: none;
+        border-radius: 30px;
         outline: none;
         font-size: 16px;
     }
 
-    .resultItem {
-        padding: 10px;
-        margin: 8px 0;
-        border-radius: 10px;
-        background: rgba(255,255,255,0.1);
-        cursor: pointer;
+    .btns {
+        margin-top: 25px;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        gap: 20px;
+        justify-content: center;
     }
 
-    .resultItem:hover {
-        background: rgba(255,255,255,0.2);
-    }
-
-    .plusBtn {
-        font-size: 20px;
-        cursor: pointer;
-    }
-
-    #videoPlayer {
-        width: 100%;
-        border-radius: 12px;
-        margin-top: 20px;
-    }
-
-    #controls {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
-    }
-
-    button {
-        padding: 10px 20px;
-        border-radius: 8px;
+    .btn {
+        padding: 14px 25px;
+        border-radius: 30px;
         border: none;
         cursor: pointer;
-        background: linear-gradient(90deg, #ff4d4d, #ffcc00);
-        color: black;
+        font-size: 17px;
         font-weight: bold;
-        transition: 0.3s;
     }
 
-    button:hover {
+    .btn-play {
+        background: #bb44ff;
+        color: white;
+    }
+
+    .btn-info {
+        background: #333;
+        color: white;
+    }
+
+    /* RESULTS */
+    .section-title {
+        margin: 40px 0 15px 40px;
+        font-size: 25px;
+        font-weight: bold;
+    }
+
+    .results {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 0 40px 80px 40px;
+    }
+
+    .song-card {
+        width: 220px;
+        background: #111;
+        padding: 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .song-card:hover {
+        background: #222;
         transform: scale(1.05);
+    }
+
+    .song-card img {
+        width: 100%;
+        border-radius: 10px;
+    }
+
+    .song-title {
+        font-size: 16px;
+        margin-top: 8px;
+    }
+
+    .song-author {
+        color: #aaa;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    /* PLAYER */
+    .player {
+        width: 100%;
+        height: 100px;
+        background: #111;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        border-top: 1px solid #333;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 30px;
+        box-sizing: border-box;
+    }
+
+    .player-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .player-info img {
+        width: 65px;
+        height: 65px;
+        border-radius: 5px;
+    }
+
+    .player-controls button {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 22px;
+        cursor: pointer;
+        margin: 0 8px;
+    }
+
+    .player-audio {
+        width: 280px;
     }
 </style>
 </head>
 
 <body>
 
-<div class="sidebar">
-    <h2>Arama</h2>
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="nav-left">Kaptanify</div>
 
-    <div class="searchBox">
-        <input id="searchInput" type="text" placeholder="Şarkı ara...">
+    <div class="nav-center">
+        <div>Ana Sayfa</div>
+        <div>Keşfet</div>
+        <div>Favoriler</div>
     </div>
 
-    <div id="searchResults"></div>
-
-    <h2>Liste</h2>
-    <div id="playlist"></div>
-</div>
-
-<div class="main">
-    <h2 id="nowPlaying">Çalan Şarkı</h2>
-
-    <video id="localVideo" controls loop style="width:100%; border-radius:12px;">
-        <source src="hansarhoş.mp4" type="video/mp4">
-    </video>
-
-    <div id="ytPlayerWrapper" style="margin-top:20px; display:none;">
-        <div id="videoPlayer"></div>
-    </div>
-
-    <div id="controls">
-        <button onclick="player.playVideo()">▶ Oynat</button>
-        <button onclick="player.pauseVideo()">⏸ Duraklat</button>
+    <div class="nav-right">
+        <input id="topSearch" type="text" placeholder="Şarkı ara..." />
     </div>
 </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<!-- HERO -->
+<div class="hero">
+    <h1>Senin Müziğin, <span class="purple">Senin Ritmin</span></h1>
+    <p>Sınırsız müzik ve videolar keşfet. YouTube tarafından desteklenen milyonlarca içerik.</p>
+
+    <input id="mainSearch" type="text" placeholder="Şarkı, sanatçı ya da çalma listesi ara..." />
+
+    <div class="btns">
+        <button class="btn btn-play">Keşfetmeye Başla</button>
+        <button class="btn btn-info">Daha Fazla Bilgi</button>
+    </div>
+</div>
+
+<!-- SEARCH RESULTS -->
+<div class="section-title">Arama Sonuçları</div>
+<div class="results" id="results"></div>
+
+<!-- PLAYER -->
+<div class="player">
+    <div class="player-info">
+        <img id="playerImg" src="" />
+        <div>
+            <div id="playerTitle">-</div>
+            <div id="playerAuthor" style="color:#aaa;">-</div>
+        </div>
+    </div>
+
+    <div class="player-controls">
+        <button id="prevBtn">⏮</button>
+        <button id="playBtn">▶</button>
+        <button id="nextBtn">⏭</button>
+    </div>
+
+    <audio id="audioPlayer" class="player-audio" controls></audio>
+</div>
 
 <script>
-let player;
-let localVideo = document.getElementById("localVideo");
+const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";  // 🔥 kendi API KEY'İNİ YAZ
 
-function onYouTubeIframeAPIReady() {
-    player = new YT.Player("videoPlayer", {
-        height: "360",
-        width: "640",
-        videoId: "",
-        playerVars: { modestbranding: 1, rel: 0, controls: 1 }
+let searchInputMain = document.getElementById("mainSearch");
+let searchInputTop = document.getElementById("topSearch");
+let resultsBox = document.getElementById("results");
+let currentIndex = 0;
+let songs = [];
+
+/* YouTube Search */
+async function searchSongs(query) {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${query}&videoCategoryId=10&maxResults=30&key=${API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.items;
+}
+
+function renderResults(list) {
+    resultsBox.innerHTML = "";
+
+    list.forEach((item, i) => {
+        let card = document.createElement("div");
+        card.className = "song-card";
+        card.innerHTML = `
+            <img src="${item.snippet.thumbnails.medium.url}">
+            <div class="song-title">${item.snippet.title}</div>
+            <div class="song-author">${item.snippet.channelTitle}</div>
+        `;
+
+        card.onclick = () => playSong(i);
+
+        resultsBox.appendChild(card);
     });
 }
 
-document.getElementById("searchInput").addEventListener("keyup", function () {
-    let q = this.value.trim();
-    if (!q) return;
+/* PLAYER */
+function playSong(i) {
+    currentIndex = i;
+    let song = songs[i];
 
-    // 🚀 Backend Proxy → 403 ÇÖZÜLDÜ
-    fetch(`http://localhost:3000/yt?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(data => {
-            let box = document.getElementById("searchResults");
-            box.innerHTML = "";
+    document.getElementById("playerImg").src = song.snippet.thumbnails.medium.url;
+    document.getElementById("playerTitle").innerText = song.snippet.title;
+    document.getElementById("playerAuthor").innerText = song.snippet.channelTitle;
 
-            if (!data.items) return;
+    document.getElementById("audioPlayer").src =
+        `https://www.youtube.com/watch?v=${song.id.videoId}`;
 
-            data.items.forEach(v => {
-                let title = v.snippet.title;
-                let id = v.id.videoId;
+    document.getElementById("audioPlayer").play();
+    document.getElementById("playBtn").innerText = "⏸";
+}
 
-                let div = document.createElement("div");
-                div.className = "resultItem";
-                div.innerHTML = `
-                    <span onclick="playYT('${id}', '${title}')">${title}</span>
-                    <span class="plusBtn" onclick="addToList('${id}', '${title}')">+</span>
-                `;
-                box.appendChild(div);
-            });
-        });
+/* Search Events */
+searchInputMain.addEventListener("keyup", async (e) => {
+    if (e.key === "Enter") {
+        songs = await searchSongs(searchInputMain.value);
+        renderResults(songs);
+    }
 });
 
-function playYT(id, title) {
-    localVideo.style.display = "none";
-    document.getElementById("ytPlayerWrapper").style.display = "block";
-    document.getElementById("nowPlaying").innerText = "Çalan: " + title;
-    player.loadVideoById(id);
-}
+searchInputTop.addEventListener("keyup", async (e) => {
+    if (e.key === "Enter") {
+        songs = await searchSongs(searchInputTop.value);
+        renderResults(songs);
+    }
+});
 
-function addToList(id, title) {
-    let p = document.createElement("div");
-    p.className = "resultItem";
-    p.innerHTML = `
-        <span onclick="playYT('${id}', '${title}')">${title}</span>
-    `;
-    document.getElementById("playlist").appendChild(p);
-}
+/* Player Buttons */
+document.getElementById("playBtn").onclick = () => {
+    let player = document.getElementById("audioPlayer");
+    if (player.paused) {
+        player.play();
+        playBtn.innerText = "⏸";
+    } else {
+        player.pause();
+        playBtn.innerText = "▶";
+    }
+};
+
+document.getElementById("nextBtn").onclick = () => {
+    if (currentIndex < songs.length - 1) playSong(currentIndex + 1);
+};
+
+document.getElementById("prevBtn").onclick = () => {
+    if (currentIndex > 0) playSong(currentIndex - 1);
+};
 </script>
 
 </body>
