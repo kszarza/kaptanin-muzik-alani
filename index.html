@@ -555,3 +555,1071 @@ prevBtn.addEventListener("click", prevTrack);
 
 <!-- YOUTUBE IFRAME API — SAYFANIN EN SONUNDA -->
 <script src="https://www.youtube.com/iframe_api"></script>
+<script>
+/* =========================================================
+   KAPTANIFY - PART 2
+   YOUTUBE API + ARAMA + PLAYER + PLAYLIST
+   ========================================================= */
+
+/* =========================================================
+   AYARLAR
+   ========================================================= */
+
+const API_KEY = "AIzaSyAFmms_JJrVmmv-rPP4INamToX9xmuVyJY";
+const MAX_RESULTS = 15;
+
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
+const resultsEl = document.getElementById("results");
+const playlistEl = document.getElementById("playlist");
+const searchInput = document.getElementById("searchInput");
+
+const playerThumb = document.getElementById("playerThumb");
+const playerTitle = document.getElementById("playerTitle");
+const playerAuthor = document.getElementById("playerAuthor");
+
+const playBtn = document.getElementById("playBtn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+
+/* =========================================================
+   PLAYER ALANI
+   ========================================================= */
+
+/*
+   Part 1'de iframe vardı:
+
+   <iframe id="yt-player"></iframe>
+
+   YouTube IFrame API için iframe'i kendimiz oluşturmuyoruz.
+   API'nin oluşturacağı Player için DIV kullanıyoruz.
+
+   Eski iframe'i kaldırıp yerine DIV koyuyoruz.
+*/
+
+const oldPlayer = document.getElementById("yt-player");
+
+let playerHost;
+
+if (oldPlayer) {
+
+    playerHost = document.createElement("div");
+    playerHost.id = "yt-player";
+
+    playerHost.style.width = "1px";
+    playerHost.style.height = "1px";
+    playerHost.style.position = "fixed";
+    playerHost.style.left = "-10000px";
+    playerHost.style.top = "-10000px";
+    playerHost.style.opacity = "0";
+    playerHost.style.pointerEvents = "none";
+
+    oldPlayer.parentNode.replaceChild(playerHost, oldPlayer);
+
+} else {
+
+    playerHost = document.createElement("div");
+    playerHost.id = "yt-player";
+
+    playerHost.style.width = "1px";
+    playerHost.style.height = "1px";
+    playerHost.style.position = "fixed";
+    playerHost.style.left = "-10000px";
+    playerHost.style.top = "-10000px";
+    playerHost.style.opacity = "0";
+    playerHost.style.pointerEvents = "none";
+
+    document.body.appendChild(playerHost);
+}
+
+
+/* =========================================================
+   DEĞİŞKENLER
+   ========================================================= */
+
+let ytPlayerMain = null;
+
+let youtubeAPIReady = false;
+let playerReady = false;
+
+let searchResults = [];
+let playlist = [];
+
+let currentIndex = -1;
+
+let currentSource = "search";
+
+let isPlaying = false;
+
+let searchTimeout = null;
+
+
+/* =========================================================
+   YOUTUBE IFRAME API YÜKLE
+   ========================================================= */
+
+function loadYouTubeAPI() {
+
+    if (window.YT && window.YT.Player) {
+
+        youtubeAPIReady = true;
+        createYouTubePlayer();
+
+        return;
+    }
+
+    /*
+       Aynı script'in iki kere eklenmesini engelle
+    */
+
+    if (document.getElementById("youtube-iframe-api")) {
+        return;
+    }
+
+    const script = document.createElement("script");
+
+    script.id = "youtube-iframe-api";
+    script.src = "https://www.youtube.com/iframe_api";
+
+    document.head.appendChild(script);
+}
+
+
+/* =========================================================
+   YOUTUBE API READY
+   ========================================================= */
+
+window.onYouTubeIframeAPIReady = function () {
+
+    youtubeAPIReady = true;
+
+    createYouTubePlayer();
+
+};
+
+
+/* =========================================================
+   PLAYER OLUŞTUR
+   ========================================================= */
+
+function createYouTubePlayer() {
+
+    if (!youtubeAPIReady) {
+        return;
+    }
+
+    if (ytPlayerMain) {
+        return;
+    }
+
+    /*
+       Burada artık iframe değil DIV kullanılıyor.
+       Bu asıl hatanın çözümü.
+    */
+
+    ytPlayerMain = new YT.Player("yt-player", {
+
+        width: "1",
+        height: "1",
+
+        videoId: "",
+
+        playerVars: {
+
+            autoplay: 0,
+
+            controls: 0,
+
+            disablekb: 1,
+
+            rel: 0,
+
+            modestbranding: 1,
+
+            playsinline: 1,
+
+            iv_load_policy: 3,
+
+            fs: 0
+
+        },
+
+        events: {
+
+            onReady: function () {
+
+                playerReady = true;
+
+                console.log("Kaptanify YouTube Player hazır.");
+
+            },
+
+            onStateChange: onMainStateChange,
+
+            onError: function (event) {
+
+                console.error(
+                    "YouTube Player hatası:",
+                    event.data
+                );
+
+            }
+
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   PLAYER DURUMU
+   ========================================================= */
+
+function onMainStateChange(event) {
+
+    if (!window.YT || !YT.PlayerState) {
+        return;
+    }
+
+    switch (event.data) {
+
+        case YT.PlayerState.PLAYING:
+
+            isPlaying = true;
+
+            playBtn.innerText = "⏸";
+
+            break;
+
+
+        case YT.PlayerState.PAUSED:
+
+            isPlaying = false;
+
+            playBtn.innerText = "▶";
+
+            break;
+
+
+        case YT.PlayerState.BUFFERING:
+
+            /*
+               Buffering sırasında butonu değiştirmiyoruz.
+            */
+
+            break;
+
+
+        case YT.PlayerState.ENDED:
+
+            isPlaying = false;
+
+            playBtn.innerText = "▶";
+
+            nextTrack();
+
+            break;
+
+    }
+
+}
+
+
+/* =========================================================
+   PLAYER HAZIR MI?
+   ========================================================= */
+
+function playerIsReady() {
+
+    if (
+        !ytPlayerMain ||
+        !playerReady ||
+        typeof ytPlayerMain.loadVideoById !== "function"
+    ) {
+
+        console.warn("YouTube Player henüz hazır değil.");
+
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   YOUTUBE ARAMA
+   ========================================================= */
+
+async function ytSearch(query) {
+
+    query = query.trim();
+
+    if (!query) {
+        return [];
+    }
+
+    const params = new URLSearchParams({
+
+        key: API_KEY,
+
+        part: "snippet",
+
+        q: query,
+
+        maxResults: String(MAX_RESULTS),
+
+        type: "video",
+
+        videoCategoryId: "10"
+
+    });
+
+
+    const url =
+        "https://www.googleapis.com/youtube/v3/search?" +
+        params.toString();
+
+
+    try {
+
+        const response = await fetch(url);
+
+
+        if (!response.ok) {
+
+            const errorText = await response.text();
+
+            console.error(
+                "YouTube API hatası:",
+                response.status,
+                errorText
+            );
+
+            return [];
+        }
+
+
+        const data = await response.json();
+
+
+        return data.items || [];
+
+
+    } catch (error) {
+
+        console.error(
+            "YouTube arama bağlantı hatası:",
+            error
+        );
+
+        return [];
+    }
+
+}
+
+
+/* =========================================================
+   ARAMA SONUÇLARINI GÖSTER
+   ========================================================= */
+
+function renderResults(list) {
+
+    resultsEl.innerHTML = "";
+
+    searchResults = list;
+
+
+    if (!list.length) {
+
+        resultsEl.innerHTML = `
+            <div style="
+                padding:20px;
+                color:#aaa;
+                text-align:center;
+            ">
+                Sonuç bulunamadı
+            </div>
+        `;
+
+        return;
+    }
+
+
+    list.forEach(function (item, index) {
+
+        if (!item.id || !item.id.videoId) {
+            return;
+        }
+
+
+        const videoId = item.id.videoId;
+
+        const title =
+            item.snippet?.title || "Bilinmeyen Şarkı";
+
+        const channel =
+            item.snippet?.channelTitle || "Bilinmeyen Sanatçı";
+
+        const thumbnails =
+            item.snippet?.thumbnails || {};
+
+        const thumb =
+            thumbnails.medium?.url ||
+            thumbnails.high?.url ||
+            thumbnails.default?.url ||
+            "";
+
+
+        const element =
+            document.createElement("div");
+
+        element.className = "result-item";
+
+        element.dataset.index = index;
+
+
+        element.innerHTML = `
+
+            <img
+                src="${escapeHTML(thumb)}"
+                alt=""
+            >
+
+            <div style="flex:1;min-width:0;">
+
+                <div
+                    class="result-title"
+                    style="
+                        white-space:nowrap;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                    "
+                >
+                    ${escapeHTML(title)}
+                </div>
+
+                <div
+                    style="
+                        opacity:.7;
+                        margin-top:5px;
+                    "
+                >
+                    ${escapeHTML(channel)}
+                </div>
+
+            </div>
+
+            <button
+                class="plusBtn"
+                type="button"
+                style="
+                    background:#1DB954;
+                    color:#000;
+                    border:none;
+                    padding:7px 11px;
+                    border-radius:6px;
+                    cursor:pointer;
+                    font-size:18px;
+                    font-weight:bold;
+                "
+            >
+                +
+            </button>
+
+        `;
+
+
+        /*
+           Sonuca tıklayınca çal
+        */
+
+        element.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    event.target.closest(".plusBtn")
+                ) {
+                    return;
+                }
+
+                playFromResults(index);
+
+            }
+        );
+
+
+        /*
+           Playlist'e ekle
+        */
+
+        const plusButton =
+            element.querySelector(".plusBtn");
+
+
+        plusButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.stopPropagation();
+
+
+                addToPlaylist({
+
+                    videoId: videoId,
+
+                    title: title,
+
+                    channel: channel,
+
+                    thumb: thumb
+
+                });
+
+            }
+        );
+
+
+        resultsEl.appendChild(element);
+
+    });
+
+}
+
+
+/* =========================================================
+   ARAMA SONUCUNDAN ŞARKI ÇAL
+   ========================================================= */
+
+function playFromResults(index) {
+
+    const item =
+        searchResults[index];
+
+
+    if (!item) {
+        return;
+    }
+
+
+    if (!item.id || !item.id.videoId) {
+        return;
+    }
+
+
+    /*
+       Player henüz hazır değilse
+       biraz bekleyip tekrar deniyoruz.
+    */
+
+    if (!playerIsReady()) {
+
+        console.log(
+            "Player hazır değil, tekrar deneniyor..."
+        );
+
+
+        let attempts = 0;
+
+
+        const waitPlayer =
+            setInterval(function () {
+
+                attempts++;
+
+
+                if (playerIsReady()) {
+
+                    clearInterval(waitPlayer);
+
+                    playFromResults(index);
+
+                    return;
+                }
+
+
+                if (attempts >= 30) {
+
+                    clearInterval(waitPlayer);
+
+                    console.error(
+                        "YouTube Player oluşturulamadı."
+                    );
+
+                }
+
+            }, 200);
+
+
+        return;
+    }
+
+
+    const videoId =
+        item.id.videoId;
+
+
+    const title =
+        item.snippet?.title ||
+        "Şarkı";
+
+
+    const channel =
+        item.snippet?.channelTitle ||
+        "";
+
+
+    const thumb =
+        item.snippet?.thumbnails?.medium?.url ||
+        item.snippet?.thumbnails?.high?.url ||
+        item.snippet?.thumbnails?.default?.url ||
+        "";
+
+
+    playerThumb.src = thumb;
+
+    playerTitle.textContent = title;
+
+    playerAuthor.textContent = channel;
+
+
+    currentSource = "search";
+
+    currentIndex = index;
+
+
+    /*
+       ARTIK GERÇEK YT.Player NESNESİ
+       ÜZERİNDEN ÇALIŞIYOR.
+    */
+
+    ytPlayerMain.loadVideoById({
+        videoId: videoId,
+        startSeconds: 0
+    });
+
+
+    isPlaying = true;
+
+    playBtn.innerText = "⏸";
+
+}
+
+
+/* =========================================================
+   PLAYLIST'E EKLE
+   ========================================================= */
+
+function addToPlaylist(song) {
+
+    if (!song || !song.videoId) {
+        return;
+    }
+
+
+    /*
+       Aynı şarkı ikinci kez eklenmesin
+    */
+
+    const alreadyExists =
+        playlist.some(function (item) {
+
+            return item.videoId === song.videoId;
+
+        });
+
+
+    if (alreadyExists) {
+
+        console.log(
+            "Bu şarkı zaten listede."
+        );
+
+        return;
+    }
+
+
+    playlist.push(song);
+
+    renderPlaylist();
+
+}
+
+
+/* =========================================================
+   PLAYLIST GÖSTER
+   ========================================================= */
+
+function renderPlaylist() {
+
+    playlistEl.innerHTML = "";
+
+
+    if (!playlist.length) {
+
+        playlistEl.innerHTML = `
+            <div style="
+                color:#777;
+                padding:10px 0;
+            ">
+                Listen henüz boş.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    playlist.forEach(function (song, index) {
+
+        const element =
+            document.createElement("div");
+
+
+        element.className =
+            "song-item";
+
+
+        element.innerHTML = `
+
+            <img
+                src="${escapeHTML(song.thumb)}"
+                alt=""
+            >
+
+            <div class="song-info">
+
+                <div class="title">
+                    ${escapeHTML(song.title)}
+                </div>
+
+                <div class="author">
+                    ${escapeHTML(song.channel)}
+                </div>
+
+            </div>
+
+        `;
+
+
+        element.addEventListener(
+            "click",
+            function () {
+
+                playTrack(index);
+
+            }
+        );
+
+
+        playlistEl.appendChild(element);
+
+    });
+
+}
+
+
+/* =========================================================
+   PLAYLIST'TEN ŞARKI ÇAL
+   ========================================================= */
+
+function playTrack(index) {
+
+    const song =
+        playlist[index];
+
+
+    if (!song) {
+        return;
+    }
+
+
+    if (!playerIsReady()) {
+
+        console.warn(
+            "Player henüz hazır değil."
+        );
+
+        return;
+    }
+
+
+    currentSource = "playlist";
+
+    currentIndex = index;
+
+
+    playerThumb.src =
+        song.thumb || "";
+
+
+    playerTitle.textContent =
+        song.title || "Şarkı";
+
+
+    playerAuthor.textContent =
+        song.channel || "";
+
+
+    ytPlayerMain.loadVideoById({
+
+        videoId: song.videoId,
+
+        startSeconds: 0
+
+    });
+
+
+    isPlaying = true;
+
+    playBtn.innerText = "⏸";
+
+}
+
+
+/* =========================================================
+   SONRAKİ ŞARKI
+   ========================================================= */
+
+function nextTrack() {
+
+    /*
+       Playlist'teysek playlist içinde ilerle
+    */
+
+    if (
+        currentSource === "playlist" &&
+        playlist.length > 0
+    ) {
+
+        let nextIndex =
+            currentIndex + 1;
+
+
+        if (nextIndex >= playlist.length) {
+
+            nextIndex = 0;
+
+        }
+
+
+        playTrack(nextIndex);
+
+        return;
+    }
+
+
+    /*
+       Arama sonuçlarındaysak
+       arama sonuçları içinde ilerle
+    */
+
+    if (
+        currentSource === "search" &&
+        searchResults.length > 0
+    ) {
+
+        let nextIndex =
+            currentIndex + 1;
+
+
+        if (nextIndex >= searchResults.length) {
+
+            nextIndex = 0;
+
+        }
+
+
+        playFromResults(nextIndex);
+
+    }
+
+}
+
+
+/* =========================================================
+   ÖNCEKİ ŞARKI
+   ========================================================= */
+
+function prevTrack() {
+
+    if (
+        currentSource === "playlist" &&
+        playlist.length > 0
+    ) {
+
+        let prevIndex =
+            currentIndex - 1;
+
+
+        if (prevIndex < 0) {
+
+            prevIndex =
+                playlist.length - 1;
+
+        }
+
+
+        playTrack(prevIndex);
+
+        return;
+    }
+
+
+    if (
+        currentSource === "search" &&
+        searchResults.length > 0
+    ) {
+
+        let prevIndex =
+            currentIndex - 1;
+
+
+        if (prevIndex < 0) {
+
+            prevIndex =
+                searchResults.length - 1;
+
+        }
+
+
+        playFromResults(prevIndex);
+
+    }
+
+}
+
+
+/* =========================================================
+   PLAY / PAUSE
+   ========================================================= */
+
+playBtn.addEventListener(
+    "click",
+    function () {
+
+        if (!playerIsReady()) {
+            return;
+        }
+
+
+        if (isPlaying) {
+
+            ytPlayerMain.pauseVideo();
+
+        } else {
+
+            ytPlayerMain.playVideo();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   NEXT / PREV BUTONLARI
+   ========================================================= */
+
+nextBtn.addEventListener(
+    "click",
+    function () {
+
+        nextTrack();
+
+    }
+);
+
+
+prevBtn.addEventListener(
+    "click",
+    function () {
+
+        prevTrack();
+
+    }
+);
+
+
+/* =========================================================
+   CANLI ARAMA
+   ========================================================= */
+
+searchInput.addEventListener(
+    "input",
+    function () {
+
+        clearTimeout(searchTimeout);
+
+
+        const query =
+            searchInput.value.trim();
+
+
+        if (!query) {
+
+            resultsEl.innerHTML = "";
+
+            searchResults = [];
+
+            return;
+
+        }
+
+
+        searchTimeout =
+            setTimeout(
+                async function () {
+
+                    const list =
+                        await ytSearch(query);
+
+
+                    renderResults(list);
+
+                },
+                400
+            );
+
+    }
+);
+
+
+/* =========================================================
+   HTML GÜVENLİĞİ
+   ========================================================= */
+
+function escapeHTML(value) {
+
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+
+}
+
+
+/* =========================================================
+   BAŞLAT
+   ========================================================= */
+
+loadYouTubeAPI();
+
+</script>
